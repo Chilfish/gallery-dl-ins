@@ -15,5 +15,8 @@ temp
 tests/fixtures/raw/captures/
 .alma-snapshots
 
+# Test
+coverage/
+
 cookies.txt
 data/

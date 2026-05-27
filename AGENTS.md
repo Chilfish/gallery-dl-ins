@@ -104,6 +104,49 @@ bun run build
 # → dist/index.mjs, dist/sdk.mjs, dist/cli/index.mjs
 ```
 
+## 测试
+
+```bash
+# 运行全部测试
+bun run test
+
+# 监听模式
+bun run test:watch
+
+# 仅单元测试
+bun run test:unit
+
+# 覆盖率
+bun run test:coverage
+```
+
+### 测试结构
+
+```
+tests/
+  setup.ts                  # dotenv 加载 .env
+  unit/
+    id-codec.test.ts        # ID ↔ shortcode 转换
+    text.test.ts            # 文本工具函数
+    message.test.ts         # Message 工厂函数
+    config.test.ts          # ConfigManager 配置系统
+    extractor-patterns.test.ts  # ⚠️ 提取器 URL 模式匹配（回归测试）
+    sdk-resolve.test.ts     # SDK URL 自动路由
+    parsers.test.ts         # REST/GraphQL 解析器
+  integration/
+    extractor.test.ts       # 提取器 + mock HTTP（需 INSTAGRAM_COOKIES）
+```
+
+### Cookie 配置
+
+集成测试通过 `.env` 文件加载 Instagram Cookie：
+
+1. 复制 `.env.example` → `.env`
+2. 从浏览器 DevTools → Application → Cookies 复制完整 Cookie 字符串
+3. 填入 `INSTAGRAM_COOKIES=...`
+
+测试会自动跳过需要 Cookie 但未配置的用例。
+
 ## 代码风格
 
 ### 注释规范
