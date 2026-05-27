@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
 import type { Message, Storage } from '../../types'
+import { describe, expect, it } from 'vitest'
 import { ConfigManager } from '../../config'
-import { DownloadJob } from '../../core/job'
 import { noopLogger } from '../../core/extractor'
+import { DownloadJob } from '../../core/job'
 import { InstagramUserExtractor } from '../../instagram/extractors'
 import { MockHttpClient } from '../helpers/mock-http'
 
@@ -74,7 +74,7 @@ describe('instagramUserExtractor integration', () => {
     expect(queues.length).toBe(7)
   })
 
-  it('DownloadJob processes queue messages and passes parent deps to children', async () => {
+  it('downloadJob processes queue messages and passes parent deps to children', async () => {
     const http = new MockHttpClient()
     // Mock endpoints that child extractors call during initialization
     http.add('/api/v1/feed/user/', { items: [], num_results: 0, more_available: false })

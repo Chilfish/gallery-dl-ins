@@ -12,7 +12,7 @@
 
 import { Command } from 'commander'
 import { ConfigManager } from '../config'
-import { DownloadJob } from '../core/job'
+import { DownloadJob, PrintJob } from '../core/job'
 import {
   InstagramHighlightsExtractor,
   InstagramPostExtractor,
@@ -41,6 +41,7 @@ interface GlobalOptions {
   verbose?: boolean
   include?: string
   split?: boolean
+  info?: boolean
 }
 
 function addSharedOptions(cmd: Command): Command {
@@ -98,6 +99,11 @@ function addSharedOptions(cmd: Command): Command {
     .option(
       '--split',
       'For stories: split each frame into a separate post',
+      false,
+    )
+    .option(
+      '-i, --info',
+      'Print structured post info to terminal (no download)',
       false,
     )
 }
@@ -211,6 +217,25 @@ async function runExtractor(
     sessionId: opts.sessionid,
     csrfToken: webCsrf,
   })
+
+  if (opts.info) {
+    const job = new PrintJob(
+      extractor as import('../core/extractor').Extractor,
+    )
+    const start = Date.now()
+    try {
+      const status = await job.run()
+      const elapsed = ((Date.now() - start) / 1000).toFixed(1)
+      if (status !== 0) {
+        log.warn(`Finished with status ${status} in ${elapsed}s`)
+      }
+    }
+    catch (err) {
+      log.error(String(err))
+      process.exit(1)
+    }
+    return
+  }
 
   const job = new DownloadJob(
     extractor as import('../core/extractor').Extractor,

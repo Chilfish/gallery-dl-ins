@@ -40,7 +40,7 @@ export type {
 } from './core/extractor'
 export { noopLogger } from './core/extractor'
 
-export { DownloadJob, Job } from './core/job'
+export { DownloadJob, Job, PrintJob } from './core/job'
 
 // Instagram
 export * from './instagram/index'
