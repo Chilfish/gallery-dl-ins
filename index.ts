@@ -65,6 +65,10 @@ export type {
   UrlMsg,
 } from './types'
 
+// SDK (high-level)
+export { InstagramSDK, createSDK } from './sdk'
+export type { SDKOptions, ExtractOptions } from './sdk'
+
 // Utils
 export { idFromShortcode, shortcodeFromId } from './utils/id-codec'
 export {
