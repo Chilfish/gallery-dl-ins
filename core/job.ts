@@ -75,7 +75,7 @@ type ArchiveMap = Map<string, Set<string>>
 
 export class DownloadJob extends Job {
   /** Base output directory (prepended to all paths). */
-  basePath: string
+  basePath: string = ''
 
   /** Current target directory metadata (set by directory messages). */
   private _currentDir: Metadata = {}
@@ -192,7 +192,7 @@ export class DownloadJob extends Job {
         && (resp.data as { type: string }).type === 'Buffer'
       ) {
         // Node.js Buffer (Bun's axios returns this for arraybuffer)
-        data = new Uint8Array(resp.data as ArrayBuffer)
+        data = new Uint8Array(resp.data as unknown as ArrayBuffer)
       }
       else {
         data = JSON.stringify(resp.data)
@@ -268,7 +268,6 @@ export class DownloadJob extends Job {
 
   private _buildDirPath(meta: Metadata): string {
     const cat = meta.category ?? this.extractor.category
-    const sub = meta.subcategory ?? this.extractor.subcategory
     const user = meta.username ?? '_'
     return `${cat}/${user}`
   }

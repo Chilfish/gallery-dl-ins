@@ -64,9 +64,12 @@ export abstract class Extractor {
   readonly groups: readonly string[]
 
   protected config: ConfigManager
-  protected http: HttpClient
-  protected storage: Storage
-  protected log: Logger
+  /** HTTP client — public so Job can access for downloads */
+  readonly http: HttpClient
+  /** Storage backend — public so Job can access for writes */
+  readonly storage: Storage
+  /** Logger instance — public so Job can access for reporting */
+  readonly log: Logger
 
   /** Delay range in seconds — random between [min, max] before each request */
   protected requestInterval: [number, number] = [6, 12]

@@ -27,31 +27,29 @@
  * ```
  */
 
-import { ConfigManager } from './config'
-import { DownloadJob } from './core/job'
-import type { Extractor } from './core/extractor'
-import type { Logger } from './core/extractor'
-import { noopLogger } from './core/extractor'
-import { extractCsrfFromCookies, createHttpClient } from './cli/adapter'
-import { createStorage } from './cli/adapter'
-import {
-  InstagramPostExtractor,
-  InstagramUserExtractor,
-  InstagramStoriesExtractor,
-  InstagramHighlightsExtractor,
-  InstagramTagExtractor,
-  InstagramSavedExtractor,
-} from './instagram/extractors'
+import type { Extractor, Logger } from './core/extractor'
 import type { HttpClient, MessageIter, Storage } from './types'
+import { createHttpClient, createStorage, extractCsrfFromCookies } from './cli/adapter'
+import { ConfigManager } from './config'
+import { noopLogger } from './core/extractor'
+import { DownloadJob } from './core/job'
+import {
+  InstagramHighlightsExtractor,
+  InstagramPostExtractor,
+  InstagramSavedExtractor,
+  InstagramStoriesExtractor,
+  InstagramTagExtractor,
+  InstagramUserExtractor,
+} from './instagram/extractors'
 
 // Re-export sub-extractor classes for type use
 export {
-  InstagramPostExtractor,
-  InstagramUserExtractor,
-  InstagramStoriesExtractor,
   InstagramHighlightsExtractor,
-  InstagramTagExtractor,
+  InstagramPostExtractor,
   InstagramSavedExtractor,
+  InstagramStoriesExtractor,
+  InstagramTagExtractor,
+  InstagramUserExtractor,
 }
 
 export interface SDKOptions {
@@ -163,7 +161,7 @@ export class InstagramSDK {
    * }
    * ```
    */
-  async *extract(url: string): MessageIter {
+  async* extract(url: string): MessageIter {
     const extractor = this._resolve(url)
     await extractor.initialize()
     yield* extractor

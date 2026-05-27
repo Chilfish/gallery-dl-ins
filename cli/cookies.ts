@@ -9,43 +9,39 @@
 
 export interface CookieJar {
   /** Record cookies from a response's Set-Cookie header(s). */
-  setFromResponse(headers: Record<string, string>): void
+  setFromResponse: (headers: Record<string, string>) => void
   /** Get the Cookie header value for the next request. */
-  getCookieHeader(): string
+  getCookieHeader: () => string
 }
 
 export function createCookieJar(): CookieJar {
   const cookies = new Map<string, string>()
   let cookieString = ''
 
-  const normalizeDomain = (domain: string): string => {
-    // Strip leading dot
-    let d = domain.startsWith('.') ? domain.slice(1) : domain
-    // Lowercase
-    d = d.toLowerCase()
-    return d
-  }
-
   return {
     setFromResponse(headers: Record<string, string>): void {
       const raw = headers['set-cookie']
-      if (!raw) return
+      if (!raw)
+        return
 
       const cookieHeaders = Array.isArray(raw) ? raw : [raw]
       for (const header of cookieHeaders) {
         const parts = header.split(';')
-        if (parts.length === 0) continue
+        if (parts.length === 0)
+          continue
 
         const [nameValue] = parts
         const eqIdx = nameValue!.indexOf('=')
-        if (eqIdx <= 0) continue
+        if (eqIdx <= 0)
+          continue
 
         const name = nameValue!.slice(0, eqIdx).trim()
         const value = nameValue!.slice(eqIdx + 1).trim()
 
         // Skip expiration by checking Max-Age=0 or Expires=epoch
-        const rest = parts.slice(1).map(s => s.trim().toLowerCase())
-        if (rest.some(s => s === 'max-age=0')) continue
+        const rest = parts.slice(1).map((s: string) => s.trim().toLowerCase())
+        if (rest.includes('max-age=0'))
+          continue
 
         cookies.set(name, value)
       }

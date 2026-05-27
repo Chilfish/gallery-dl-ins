@@ -182,6 +182,7 @@ async function runExtractor(
     process.exit(1)
   }
 
+  // eslint-disable-next-line new-cap
   const extractor = new extrClass({
     url,
     match,
@@ -324,7 +325,7 @@ const saved = program
 addSharedOptions(saved)
 
 // ── info ──
-const info = program
+program
   .command('info <url>')
   .description(
     'Fetch and display Instagram user profile metadata\n\n'

@@ -52,6 +52,7 @@ export function createHttpClient(
       data?: unknown
       signal?: AbortSignal
       timeout?: number
+      responseType?: 'arraybuffer' | 'text' | 'json'
     }): Promise<HttpResponse<T>> {
       const method = config.method ?? 'GET'
       logger?.debug(`${method} ${config.url}`)
@@ -159,6 +160,7 @@ export async function createWebClient(
       data?: unknown
       signal?: AbortSignal
       timeout?: number
+      responseType?: 'arraybuffer' | 'text' | 'json'
     }): Promise<HttpResponse<T>> {
       const method = config.method ?? 'GET'
       logger?.debug(`${method} ${config.url}`)

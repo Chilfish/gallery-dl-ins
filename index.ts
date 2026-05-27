@@ -49,6 +49,10 @@ export { directory, queue, url } from './message'
 
 export type { MessageIter } from './message'
 
+// SDK (high-level)
+export { createSDK, InstagramSDK } from './sdk'
+
+export type { ExtractOptions, SDKOptions } from './sdk'
 // Types
 export type {
   Config,
@@ -64,10 +68,6 @@ export type {
   Storage,
   UrlMsg,
 } from './types'
-
-// SDK (high-level)
-export { InstagramSDK, createSDK } from './sdk'
-export type { SDKOptions, ExtractOptions } from './sdk'
 
 // Utils
 export { idFromShortcode, shortcodeFromId } from './utils/id-codec'
