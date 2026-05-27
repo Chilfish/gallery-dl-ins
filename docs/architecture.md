@@ -7,10 +7,11 @@
 ```
 gallery-dl-ins/
 ├── index.ts              # 公共 API 入口（barrel export）
+├── sdk.ts                # 高层 SDK 封装（InstagramSDK）
 ├── config.ts             # 嵌套配置读取器
 ├── types.ts              # 共享类型：HttpClient、Storage、Message 协议
 ├── message.ts            # 消息工厂函数
-├── package.json          # ESM 包，双入口：. / ./cli
+├── package.json          # ESM 包，三入口：. / ./sdk / ./cli
 ├── tsdown.config.ts      # 构建配置
 │
 ├── core/                 # 平台无关核心
@@ -25,19 +26,22 @@ gallery-dl-ins/
 │   ├── parsers.ts        # 帖子解析器 (REST / GraphQL → ParsedPost)
 │   └── types.ts          # Instagram 专用类型
 │
-├── cli/                  # CLI 入口（Node.js 绑定）
+├── cli/                  # CLI + adapter（Node.js 绑定）
 │   ├── index.ts          # Commander 命令定义
-│   └── adapter.ts        # HttpClient / Storage / Logger 的 Node 实现
+│   ├── adapter.ts        # HttpClient / Storage / Logger 的 Node 实现
+│   └── cookies.ts        # 内存 Cookie Jar
 │
 ├── utils/                # 纯函数工具
 │   ├── id-codec.ts       # Instagram ID ↔ shortcode
 │   └── text.ts           # Unicode / HTML / URL 工具
 │
-└── docs/                 # 文档（本目录）
+└── docs/                 # 文档
+    ├── sdk.md            # SDK 开发者指南
     ├── gallery-dl.md     # Python 原版架构参考
     ├── architecture.md   # 本文档
     ├── api-reference.md  # API 参考
-    └── cli.md            # CLI 使用指南
+    ├── cli.md            # CLI 使用指南
+    └── migration-from-python.md  # Python → TS 迁移对照
 ```
 
 **核心理念**：核心库（`core/` + `instagram/`）完全平台无关——只依赖 `HttpClient` / `Storage` / `Logger` 三个接口。`cli/adapter.ts` 负责把它们绑定到 Node.js（axios / fs / console），浏览器环境只需换一套 adapter。
