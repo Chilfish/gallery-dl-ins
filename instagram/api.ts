@@ -319,9 +319,11 @@ export class InstagramRestAPI {
       ? `https://www.instagram.com/api${endpoint}`
       : endpoint
 
+    const csrf = this.getCsrf()
     const headers: Record<string, string> = {
       'Accept': '*/*',
-      'X-CSRFToken': this.getCsrf(),
+      'Cookie': `csrftoken=${csrf}`,
+      'X-CSRFToken': csrf,
       'X-IG-App-ID': APP_ID,
       'X-ASBD-ID': ASBD_ID,
       'X-IG-WWW-Claim': this.getWwwClaim(),
@@ -347,8 +349,26 @@ export class InstagramRestAPI {
       data: opts.data,
     })
 
+    // Check for login / challenge redirects (same logic as InstagramExtractor.request)
+    const finalUrl = resp.url
+    if (finalUrl.includes('/accounts/login/')) {
+      throw new Error(
+        'Instagram redirected to login page — you need a valid sessionid. '
+        + 'Export it from your browser (F12 → Application → Cookies → sessionid) '
+        + 'and pass --sessionid=<value> or set INSTAGRAM_SESSIONID env var.',
+      )
+    }
+    if (finalUrl.includes('/challenge/')) {
+      throw new Error(
+        'Instagram redirected to challenge page — account flagged. '
+        + 'Log in via browser to resolve the challenge, then export a fresh sessionid.',
+      )
+    }
+
     // Track CSRF updates
-    const csrfCookie = (resp.headers['set-cookie'] ?? '')
+    const rawCookie = resp.headers['set-cookie']
+    const cookieStr = Array.isArray(rawCookie) ? rawCookie.join('; ') : (rawCookie ?? '')
+    const csrfCookie = cookieStr
       .split(';')
       .find(c => c.trim().startsWith('csrftoken='))
     if (csrfCookie) {

@@ -28,6 +28,8 @@ import { parsePostGraphql, parsePostRest } from './parsers'
 export interface InstagramExtractorOptions extends ExtractorOptions {
   sessionId?: string
   cookies?: Record<string, string>
+  /** Pre-seeded CSRF token (from anonymous session cookie jar). */
+  csrfToken?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -58,9 +60,11 @@ export abstract class InstagramExtractor extends Extractor {
   protected _user: InstagramUser | null = null
 
   private readonly _findTags = findTags
+  private readonly _csrfSeed: string | undefined
 
   constructor(opts: InstagramExtractorOptions) {
     super(opts)
+    this._csrfSeed = opts.csrfToken
   }
 
   // -----------------------------------------------------------------------
@@ -68,7 +72,9 @@ export abstract class InstagramExtractor extends Extractor {
   // -----------------------------------------------------------------------
 
   protected override async _init(): Promise<void> {
-    this.csrfToken.value = Extractor.generateToken(16)
+    // Use pre-seeded CSRF token if available (from anonymous cookie jar),
+    // otherwise generate a random one for sessionid-based auth.
+    this.csrfToken.value = this._csrfSeed || Extractor.generateToken(16)
 
     this.api = new InstagramRestAPI({
       http: this.http,
@@ -156,6 +162,10 @@ export abstract class InstagramExtractor extends Extractor {
       videosDash,
     }
 
+    this.log.debug(
+      `cfg: videos=${shouldDownloadVideos} previews=${!!previews} audio=${audio} maxPosts=${maxPosts ?? '∞'} staticVideos=${parserCfg.staticVideo}`,
+    )
+
     let count = 0
     for await (const post of this.posts()) {
       if (maxPosts != null && count >= maxPosts)
@@ -220,6 +230,10 @@ export abstract class InstagramExtractor extends Extractor {
         }
         yield url(imgUrl, combined as unknown as Metadata)
       }
+    }
+
+    if (count === 0) {
+      this.log.warn('No posts returned — API may have returned empty data (check sessionid or post visibility)')
     }
   }
 

@@ -18,6 +18,19 @@ import type {
 import type { Extractor } from './extractor'
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0)
+    return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  const val = bytes / 1024 ** i
+  return `${val.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
+}
+
+// ---------------------------------------------------------------------------
 // Job (abstract)
 // ---------------------------------------------------------------------------
 
@@ -34,6 +47,9 @@ export abstract class Job {
    * dispatches every yielded message.
    */
   async run(): Promise<number> {
+    this.extractor.log.info(
+      `Starting ${this.extractor.category}/${this.extractor.subcategory} — ${this.extractor.url}`,
+    )
     await this.extractor.initialize()
 
     for await (const msg of this.extractor) {
@@ -50,8 +66,12 @@ export abstract class Job {
       }
     }
 
+    this._report()
     return this.status
   }
+
+  /** Override in subclasses to print a summary. */
+  protected _report(): void {}
 
   abstract handleDirectory(msg: DirectoryMsg): Promise<void>
   abstract handleUrl(msg: UrlMsg): Promise<void>
@@ -66,6 +86,9 @@ export abstract class Job {
 type ArchiveMap = Map<string, Set<string>>
 
 export class DownloadJob extends Job {
+  /** Base output directory (prepended to all paths). */
+  basePath: string
+
   /** Current target directory metadata (set by directory messages). */
   private _currentDir: Metadata = {}
 
@@ -77,6 +100,12 @@ export class DownloadJob extends Job {
    * by interpolating this format string over the metadata.
    */
   private readonly _archiveFmts: Map<string, string> = new Map()
+
+  // ── Stats ──
+  private _postCount = 0
+  private _fileCount = 0
+  private _downloadedBytes = 0
+  private _skippedCount = 0
 
   registerArchive(category: string, format: string): void {
     this._archiveFmts.set(category, format)
@@ -120,12 +149,16 @@ export class DownloadJob extends Job {
 
   async handleDirectory(msg: DirectoryMsg): Promise<void> {
     this._currentDir = { ...msg.metadata }
+    this._postCount++
 
     // Ensure directory exists
-    const dirPath = this._buildDirPath(msg.metadata)
-    if (dirPath) {
-      await this.extractor.storage.mkdir(dirPath)
-    }
+    const dirPath = this.basePath
+      ? `${this.basePath}/${this._buildDirPath(msg.metadata)}`
+      : this._buildDirPath(msg.metadata)
+    await this.extractor.storage.mkdir(dirPath)
+    this.extractor.log.info(
+      `#${this._postCount} ${msg.metadata.username ?? '?'}/${msg.metadata.post_shortcode ?? '?'} → ${dirPath}/`,
+    )
   }
 
   async handleUrl(msg: UrlMsg): Promise<void> {
@@ -135,29 +168,57 @@ export class DownloadJob extends Job {
     }
 
     // Archive check
-    if (this._isArchived(meta))
+    if (this._isArchived(meta)) {
+      this._skippedCount++
       return
+    }
 
     // Build output path
     const filename = this._buildFilename(meta)
-    const dirPath = this._buildDirPath(meta)
-    const fullPath = dirPath ? `${dirPath}/${filename}` : filename
+    const dirPath = this.basePath
+      ? `${this.basePath}/${this._buildDirPath(meta)}`
+      : this._buildDirPath(meta)
+    const fullPath = `${dirPath}/${filename}`
 
     try {
-      // Fetch the content
+      // Fetch as binary (images, videos are not text)
       const resp = await this.extractor.http.request({
         url: msg.url,
         method: 'GET',
+        responseType: 'arraybuffer',
       })
 
-      // Write via Storage abstraction
-      const data
-        = resp.data instanceof Uint8Array
-          ? resp.data
-          : typeof resp.data === 'string'
-            ? resp.data
-            : JSON.stringify(resp.data)
+      // Convert to Uint8Array for Storage.write
+      let data: Uint8Array | string
+      if (resp.data instanceof Uint8Array) {
+        data = resp.data
+      }
+      else if (resp.data instanceof ArrayBuffer) {
+        data = new Uint8Array(resp.data)
+      }
+      else if (typeof resp.data === 'string') {
+        data = resp.data
+      }
+      else if (
+        typeof resp.data === 'object'
+        && resp.data != null
+        && 'type' in resp.data
+        && (resp.data as { type: string }).type === 'Buffer'
+      ) {
+        // Node.js Buffer (Bun's axios returns this for arraybuffer)
+        data = new Uint8Array(resp.data as ArrayBuffer)
+      }
+      else {
+        data = JSON.stringify(resp.data)
+      }
       await this.extractor.storage.write(fullPath, data)
+
+      this._fileCount++
+      const size = data instanceof Uint8Array ? data.byteLength : data.length
+      this._downloadedBytes += size
+      this.extractor.log.info(
+        `  └─ ${filename}  (${formatBytes(size)})`,
+      )
 
       this._archive(meta)
     }
@@ -202,6 +263,20 @@ export class DownloadJob extends Job {
       else {
         this.archive.set(cat, set)
       }
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Report
+  // -----------------------------------------------------------------------
+
+  protected override _report(): void {
+    const log = this.extractor.log
+    log.info(
+      `Done — ${this._postCount} post(s), ${this._fileCount} file(s) downloaded (${formatBytes(this._downloadedBytes)})`,
+    )
+    if (this._skippedCount > 0) {
+      log.info(`  ${this._skippedCount} file(s) skipped (already archived)`)
     }
   }
 

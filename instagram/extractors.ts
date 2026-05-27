@@ -59,6 +59,8 @@ export class InstagramPostExtractor extends InstagramExtractor {
       return
 
     if (groups[1] === '') {
+      // Share link — follow redirect
+      this.log.info(`Resolving share link: ${this.url}`)
       const resp = await this.request(ensureHttpScheme(this.url), {
         headers: {
           'Sec-Fetch-Dest': 'empty',
@@ -70,6 +72,7 @@ export class InstagramPostExtractor extends InstagramExtractor {
       shortcode = parts?.[parts.length - 2] ?? shortcode
     }
 
+    this.log.debug(`Fetching post: ${shortcode}`)
     yield* this.api.media(shortcode)
   }
 }

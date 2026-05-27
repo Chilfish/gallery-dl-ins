@@ -18,6 +18,8 @@ export interface RequestConfig {
   signal?: AbortSignal
   /** WithCredentials / CORS cookie passthrough for browsers */
   withCredentials?: boolean
+  /** For binary downloads — 'arraybuffer' returns raw bytes */
+  responseType?: 'arraybuffer' | 'text' | 'json'
 }
 
 export interface HttpResponse<T = unknown> {
@@ -38,6 +40,7 @@ export interface HttpClient {
     data?: unknown
     signal?: AbortSignal
     timeout?: number
+    responseType?: 'arraybuffer' | 'text' | 'json'
   }) => Promise<HttpResponse<T>>
 }
 

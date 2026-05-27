@@ -28,7 +28,7 @@ import {
   InstagramTagExtractor,
   InstagramUserExtractor,
 } from '../instagram/extractors'
-import { createHttpClient, createLogger, createStorage } from './adapter'
+import { createHttpClient, createLogger, createStorage, createWebClient, extractCsrfFromCookies } from './adapter'
 
 // ---------------------------------------------------------------------------
 // Shared options — applied to all subcommands
@@ -36,6 +36,7 @@ import { createHttpClient, createLogger, createStorage } from './adapter'
 
 interface GlobalOptions {
   sessionid?: string
+  cookies?: string
   output?: string
   videos?: string
   previews?: string
@@ -58,7 +59,12 @@ function addSharedOptions(cmd: Command): Command {
       'Instagram sessionid cookie value (from browser)',
       process.env.INSTAGRAM_SESSIONID,
     )
-    .option('-o, --output <dir>', 'Output directory', './gallery-dl')
+    .option(
+      '--cookies <string>',
+      'Full Cookie header string from browser (DevTools → Network → Request Headers → Cookie)',
+      process.env.INSTAGRAM_COOKIES,
+    )
+    .option('-o, --output <dir>', 'Output directory', './data')
     .option(
       '--videos <mode>',
       'Download videos: true, false, or merged (yt-dlp)',
@@ -157,9 +163,24 @@ async function runExtractor(
   opts: GlobalOptions,
 ): Promise<void> {
   const config = buildConfig(opts)
-  const http = createHttpClient(opts.sessionid)
-  const storage = createStorage()
   const log = createLogger(opts.verbose ?? false)
+  let http: ReturnType<typeof createHttpClient>
+  let webCsrf: string | undefined
+
+  if (opts.cookies) {
+    // Full cookie string — highest priority
+    http = createHttpClient(undefined, opts.cookies, log)
+    webCsrf = extractCsrfFromCookies(opts.cookies)
+  }
+  else if (opts.sessionid) {
+    http = createHttpClient(opts.sessionid, undefined, log)
+  }
+  else {
+    const wc = await createWebClient(log)
+    http = wc.http
+    webCsrf = wc.csrfToken
+  }
+  const storage = createStorage()
 
   const match = extrClass.pattern.exec(url)
   if (!match) {
@@ -175,21 +196,29 @@ async function runExtractor(
     storage,
     log,
     sessionId: opts.sessionid,
+    csrfToken: webCsrf,
   })
 
   const job = new DownloadJob(
     extractor as import('../core/extractor').Extractor,
   )
+  job.basePath = opts.output ?? './data'
 
   const start = Date.now()
-  const status = await job.run()
-  const elapsed = ((Date.now() - start) / 1000).toFixed(1)
+  try {
+    const status = await job.run()
+    const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 
-  if (status === 0) {
-    log.info(`Done in ${elapsed}s`)
+    if (status === 0) {
+      log.info(`Done in ${elapsed}s`)
+    }
+    else {
+      log.warn(`Finished with status ${status} in ${elapsed}s`)
+    }
   }
-  else {
-    log.warn(`Finished with status ${status} in ${elapsed}s`)
+  catch (err) {
+    log.error(String(err))
+    process.exit(1)
   }
 }
 
@@ -312,9 +341,23 @@ const info = program
   )
   .action(async (url: string, opts: GlobalOptions) => {
     const config = buildConfig(opts)
-    const http = createHttpClient(opts.sessionid)
-    const storage = createStorage()
     const log = createLogger(opts.verbose ?? false)
+    let http: ReturnType<typeof createHttpClient>
+    let webCsrf: string | undefined
+
+    if (opts.cookies) {
+      http = createHttpClient(undefined, opts.cookies, log)
+      webCsrf = extractCsrfFromCookies(opts.cookies)
+    }
+    else if (opts.sessionid) {
+      http = createHttpClient(opts.sessionid, undefined, log)
+    }
+    else {
+      const wc = await createWebClient(log)
+      http = wc.http
+      webCsrf = wc.csrfToken
+    }
+    const storage = createStorage()
 
     const match = InstagramInfoExtractor.pattern.exec(url)
     if (!match) {
@@ -330,6 +373,7 @@ const info = program
       storage,
       log,
       sessionId: opts.sessionid,
+      csrfToken: webCsrf,
     })
 
     await extractor.initialize()

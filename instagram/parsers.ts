@@ -9,9 +9,9 @@ import type {
   InstagramPost,
   InstagramUser,
   MusicSticker,
-  type ParsedMedia,
-  type ParsedPost,
-  type ParserConfig,
+  ParsedMedia,
+  ParsedPost,
+  ParserConfig,
   VideoVersion,
 } from './types'
 import { shortcodeFromId } from '../utils/id-codec'
