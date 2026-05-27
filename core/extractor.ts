@@ -63,7 +63,7 @@ export abstract class Extractor {
   /** Regex match groups from ``fromURL`` */
   readonly groups: readonly string[]
 
-  protected config: ConfigManager
+  readonly config: ConfigManager
   /** HTTP client — public so Job can access for downloads */
   readonly http: HttpClient
   /** Storage backend — public so Job can access for writes */

@@ -101,7 +101,7 @@ export type MessageIter = AsyncGenerator<Message, void, unknown>
  * logic can re-instantiate from a URL.
  */
 export interface ExtractorClass {
-  fromURL: (url: string) => Extractor | null
+  pattern: RegExp
   subcategory: string
 }
 

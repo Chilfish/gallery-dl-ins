@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ConfigManager } from '../../config'
+import { DownloadJob } from '../../core/job'
 import { InstagramUserExtractor } from '../../instagram/extractors'
 import { noopLogger } from '../../core/extractor'
 import { MockHttpClient } from '../helpers/mock-http'
@@ -71,5 +72,37 @@ describe('InstagramUserExtractor integration', () => {
     const queues = messages.filter(m => m.type === 'queue')
     // include=all → posts, reels, tagged, stories, highlights, info, avatar = 7
     expect(queues.length).toBe(7)
+  })
+
+  it('DownloadJob processes queue messages and passes parent deps to children', async () => {
+    const http = new MockHttpClient()
+    // Mock endpoints that child extractors call during initialization
+    http.add('/api/v1/feed/user/', { items: [], num_results: 0, more_available: false })
+    http.add('/web/search/topsearch/', { users: [] })
+    http.add('/api/v1/users/web_profile_info/', {
+      data: {
+        user: { pk: '123', id: '123', username: 'watase_yuzuki', full_name: 'Watase Yuzuki', is_private: false },
+      },
+    })
+
+    const match = InstagramUserExtractor.pattern.exec(url)!
+    const config = new ConfigManager()
+    config.set('extractor.instagram.include', 'posts')
+
+    const extractor = new InstagramUserExtractor({
+      url,
+      match,
+      config,
+      http,
+      storage: mockStorage,
+      log: noopLogger,
+    })
+
+    const job = new DownloadJob(extractor as any)
+    ;(job as any).basePath = './test-output'
+    const status = await job.run()
+
+    // Should complete without error (the queue dispatch works even with 0 posts)
+    expect(status).toBe(0)
   })
 })
