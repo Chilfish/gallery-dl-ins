@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import type { Message, Storage } from '../../types'
+import { describe, expect, it } from 'vitest'
 import { ConfigManager } from '../../config'
-import { InstagramUserExtractor } from '../../instagram/extractors'
 import { noopLogger } from '../../core/extractor'
+import { InstagramUserExtractor } from '../../instagram/extractors'
 import { MockHttpClient } from '../helpers/mock-http'
-import type { Storage, Message } from '../../types'
 
 const mockStorage: Storage = {
   exists: async () => false,
@@ -11,7 +11,7 @@ const mockStorage: Storage = {
   mkdir: async () => {},
 }
 
-describe('InstagramUserExtractor integration', () => {
+describe('instagramUserExtractor integration', () => {
   const url = 'https://www.instagram.com/watase_yuzuki/'
 
   it('yields queue messages for posts by default', async () => {

@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 /**
  * Text utilities tests — pure functions from utils/text.ts
  */
@@ -73,7 +75,7 @@ describe('unescape', () => {
     expect(unescape('&lt;')).toBe('<')
     expect(unescape('&gt;')).toBe('>')
     expect(unescape('&quot;')).toBe('"')
-    expect(unescape('&apos;')).toBe("'")
+    expect(unescape('&apos;')).toBe('\'')
     expect(unescape('&nbsp;')).toBe('\u00A0')
   })
 

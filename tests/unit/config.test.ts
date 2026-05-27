@@ -1,10 +1,11 @@
+import { describe, expect, it } from 'vitest'
 /**
  * ConfigManager tests — nested config get/set/interpolate.
  */
 
 import { ConfigManager } from '../../config'
 
-describe('ConfigManager.get', () => {
+describe('configManager.get', () => {
   const cfg = new ConfigManager({
     app: {
       name: 'test-app',
@@ -37,7 +38,7 @@ describe('ConfigManager.get', () => {
   })
 })
 
-describe('ConfigManager.set', () => {
+describe('configManager.set', () => {
   it('creates a nested path and sets value', () => {
     const cfg = new ConfigManager()
     cfg.set('a.b.c', 'hello')
@@ -59,7 +60,7 @@ describe('ConfigManager.set', () => {
   })
 })
 
-describe('ConfigManager.interpolate', () => {
+describe('configManager.interpolate', () => {
   it('looks up key at first ancestor level that has it (root → leaf order)', () => {
     // interpolate walks cfgPath forward (root → extractor → instagram → post),
     // checking each level's node for the key. It returns the FIRST match it finds.

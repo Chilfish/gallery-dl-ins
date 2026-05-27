@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import type { Message, Storage } from '../../types'
+import { describe, expect, it } from 'vitest'
 import { ConfigManager } from '../../config'
-import { InstagramStoriesExtractor } from '../../instagram/extractors'
 import { noopLogger } from '../../core/extractor'
+import { InstagramStoriesExtractor } from '../../instagram/extractors'
 import { MockHttpClient } from '../helpers/mock-http'
-import type { Storage, Message } from '../../types'
 
 const mockStorage: Storage = {
   exists: async () => false,
@@ -11,8 +11,8 @@ const mockStorage: Storage = {
   mkdir: async () => {},
 }
 
-describe('InstagramStoriesExtractor integration', () => {
-  const url = 'https://www.instagram.com/stories/rin_.t710/3906328154789100102/'
+describe('instagramStoriesExtractor integration', () => {
+  const url = 'https://www.instagram.com/stories/rin_.t710/'
 
   const mockUserData = {
     data: {

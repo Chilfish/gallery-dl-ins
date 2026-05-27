@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 /**
  * SDK URL routing tests.
  *
@@ -48,7 +49,7 @@ function resolveUrl(url: string): string | null {
   return null
 }
 
-describe('SDK URL resolve', () => {
+describe('sDK URL resolve', () => {
   it('routes /p/ to post extractor', () => {
     expect(resolveUrl('https://www.instagram.com/p/ABC123/')).toBe('post')
   })

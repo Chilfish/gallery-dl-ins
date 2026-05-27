@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 /**
  * Extractor URL pattern regression tests.
  *
@@ -41,7 +42,7 @@ function groupsAfterSlice(
 
 /** InstagramPostExtractor */
 
-describe('InstagramPostExtractor.pattern', () => {
+describe('instagramPostExtractor.pattern', () => {
   const { pattern } = InstagramPostExtractor
 
   it('matches /p/ URL', () => {
@@ -100,7 +101,7 @@ describe('InstagramPostExtractor.pattern', () => {
 
 /** InstagramStoriesExtractor */
 
-describe('InstagramStoriesExtractor.pattern', () => {
+describe('instagramStoriesExtractor.pattern', () => {
   const { pattern } = InstagramStoriesExtractor
 
   it('matches stories URL with media ID', () => {
@@ -150,7 +151,7 @@ describe('InstagramStoriesExtractor.pattern', () => {
 
 /** InstagramUserExtractor */
 
-describe('InstagramUserExtractor.pattern', () => {
+describe('instagramUserExtractor.pattern', () => {
   const { pattern } = InstagramUserExtractor
 
   it('matches user profile URL with trailing slash', () => {
@@ -181,7 +182,7 @@ describe('InstagramUserExtractor.pattern', () => {
 
 /** InstagramTagExtractor */
 
-describe('InstagramTagExtractor.pattern', () => {
+describe('instagramTagExtractor.pattern', () => {
   const { pattern } = InstagramTagExtractor
 
   it('matches explore tags URL', () => {
@@ -204,7 +205,7 @@ describe('InstagramTagExtractor.pattern', () => {
 
 /** InstagramHighlightsExtractor */
 
-describe('InstagramHighlightsExtractor.pattern', () => {
+describe('instagramHighlightsExtractor.pattern', () => {
   const { pattern } = InstagramHighlightsExtractor
 
   it('matches highlights URL', () => {
@@ -227,7 +228,7 @@ describe('InstagramHighlightsExtractor.pattern', () => {
 
 /** InstagramSavedExtractor */
 
-describe('InstagramSavedExtractor.pattern', () => {
+describe('instagramSavedExtractor.pattern', () => {
   const { pattern } = InstagramSavedExtractor
 
   it('matches /saved/ URL', () => {
@@ -247,7 +248,7 @@ describe('InstagramSavedExtractor.pattern', () => {
 
 /** InstagramPostsExtractor */
 
-describe('InstagramPostsExtractor.pattern', () => {
+describe('instagramPostsExtractor.pattern', () => {
   const { pattern } = InstagramPostsExtractor
 
   it('matches /username/posts/ URL', () => {
@@ -262,7 +263,7 @@ describe('InstagramPostsExtractor.pattern', () => {
 
 /** InstagramReelsExtractor */
 
-describe('InstagramReelsExtractor.pattern', () => {
+describe('instagramReelsExtractor.pattern', () => {
   const { pattern } = InstagramReelsExtractor
 
   it('matches /username/reels/ URL', () => {
@@ -273,7 +274,7 @@ describe('InstagramReelsExtractor.pattern', () => {
 
 /** InstagramTaggedExtractor */
 
-describe('InstagramTaggedExtractor.pattern', () => {
+describe('instagramTaggedExtractor.pattern', () => {
   const { pattern } = InstagramTaggedExtractor
 
   it('matches /username/tagged/ URL', () => {
@@ -288,7 +289,7 @@ describe('InstagramTaggedExtractor.pattern', () => {
 
 /** InstagramInfoExtractor */
 
-describe('InstagramInfoExtractor.pattern', () => {
+describe('instagramInfoExtractor.pattern', () => {
   const { pattern } = InstagramInfoExtractor
 
   it('matches /username/info/ URL', () => {
@@ -303,7 +304,7 @@ describe('InstagramInfoExtractor.pattern', () => {
 
 /** InstagramAvatarExtractor */
 
-describe('InstagramAvatarExtractor.pattern', () => {
+describe('instagramAvatarExtractor.pattern', () => {
   const { pattern } = InstagramAvatarExtractor
 
   it('matches /username/avatar/ URL', () => {

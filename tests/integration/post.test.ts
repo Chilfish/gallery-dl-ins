@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import type { HttpClient, Message, Storage } from '../../types'
+import { describe, expect, it } from 'vitest'
 import { ConfigManager } from '../../config'
-import { InstagramPostExtractor } from '../../instagram/extractors'
 import { noopLogger } from '../../core/extractor'
-import type { HttpClient, Storage, Message } from '../../types'
+import { InstagramPostExtractor } from '../../instagram/extractors'
 import { MockHttpClient } from '../helpers/mock-http'
 
 // Minimal no-op storage
@@ -20,7 +20,7 @@ const mockUser = {
   profile_pic_url: 'https://example.com/pic.jpg',
 }
 
-describe('InstagramPostExtractor integration', () => {
+describe('instagramPostExtractor integration', () => {
   const url = 'https://www.instagram.com/p/DY1p3ufmcBS/'
 
   const mockPost = {

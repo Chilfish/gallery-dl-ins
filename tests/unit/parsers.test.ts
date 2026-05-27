@@ -1,16 +1,17 @@
+import type {
+  InstagramPost,
+  ParserConfig,
+} from '../../instagram/types'
+import { describe, expect, it } from 'vitest'
+import { parsePostGraphql, parsePostRest } from '../../instagram/parsers'
+import { findTags } from '../../utils/text'
+
 /**
  * Post parser tests — normalize raw API responses into ParsedPost.
  *
  * Tests both ``parsePostRest`` and ``parsePostGraphql`` with realistic
  * mock InstagramPost data.
  */
-
-import type {
-  InstagramPost,
-  ParserConfig,
-} from '../../instagram/types'
-import { parsePostGraphql, parsePostRest } from '../../instagram/parsers'
-import { findTags } from '../../utils/text'
 
 /** Shared parser config for tests */
 function makeParserConfig(overrides: Partial<ParserConfig> = {}): ParserConfig {
