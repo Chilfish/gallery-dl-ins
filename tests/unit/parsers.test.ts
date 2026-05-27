@@ -43,7 +43,7 @@ const mockImage = {
   candidates: [{ url: 'https://example.com/photo.jpg', width: 1080, height: 1350 }],
 }
 
-// ──── REST parser ────
+/** REST parser */
 
 describe('parsePostRest', () => {
   const cfg = makeParserConfig()
@@ -217,7 +217,7 @@ describe('parsePostRest', () => {
   })
 })
 
-// ──── GraphQL parser ────
+/** GraphQL parser */
 
 describe('parsePostGraphql', () => {
   const cfg = makeParserConfig()

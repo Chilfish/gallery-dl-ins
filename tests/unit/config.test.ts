@@ -81,35 +81,12 @@ describe('ConfigManager.interpolate', () => {
     expect(result).toBe('default')
   })
 
-  it('finds key at intermediate level of hierarchy', () => {
-    // key is found at the 'instagram' level (not 'post')
-    const cfg = new ConfigManager({
-      extractor: {
-        instagram: {
-          videos: true,
-        },
-      },
-    })
-
-    const result = cfg.interpolate(
-      ['extractor', 'instagram', 'post'],
-      'videos',
-    )
-    expect(result).toBe(true)
-  })
-
-  it('finds key at extractor level', () => {
-    const cfg = new ConfigManager({
-      extractor: {
-        videos: 'grandparent',
-      },
-    })
-
-    const result = cfg.interpolate(
-      ['extractor', 'instagram', 'post'],
-      'videos',
-    )
-    expect(result).toBe('grandparent')
+  it.each([
+    ['grandparent level', { extractor: { videos: 'grandparent' } }, 'grandparent'],
+    ['instagram level', { extractor: { instagram: { videos: true } } }, true],
+  ])('finds key at %s', (_, data, expected) => {
+    const cfg = new ConfigManager(data)
+    expect(cfg.interpolate(['extractor', 'instagram', 'post'], 'videos')).toBe(expected)
   })
 
   it('returns default when key not found at any level', () => {

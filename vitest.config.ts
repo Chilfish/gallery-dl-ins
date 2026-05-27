@@ -8,5 +8,8 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     // Bun-compatible settings
     pool: 'forks',
+    // Test isolation best practices
+    restoreMocks: true,
+    clearMocks: true,
   },
 })

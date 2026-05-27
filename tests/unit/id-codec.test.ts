@@ -47,35 +47,23 @@ describe('shortcodeFromId', () => {
 })
 
 describe('roundtrip consistency', () => {
-  it('shortcode → id → shortcode preserves original', () => {
-    const originals = [
-      'CxAbCdEfGh',
-      'BkR2x5PnsZm',
-      'a1b2c3d4e5',
-      '_-_-test',
-    ]
-
-    for (const sc of originals) {
-      const id = idFromShortcode(sc)
-      const back = shortcodeFromId(id)
-      expect(back).toBe(sc)
-    }
+  it.each([
+    'CxAbCdEfGh',
+    'BkR2x5PnsZm',
+    'a1b2c3d4e5',
+    '_-_-test',
+  ])('shortcode → id → shortcode preserves %s', (sc) => {
+    expect(shortcodeFromId(idFromShortcode(sc))).toBe(sc)
   })
 
-  it('id → shortcode → id preserves original', () => {
-    const ids = [
-      '3451081400122098390',
-      '1234567890123456789',
-      '9999999999999999999',
-      '1',
-      '64',
-      '4096',
-    ]
-
-    for (const id of ids) {
-      const sc = shortcodeFromId(id)
-      const back = idFromShortcode(sc)
-      expect(back).toBe(id)
-    }
+  it.each([
+    '3451081400122098390',
+    '1234567890123456789',
+    '9999999999999999999',
+    '1',
+    '64',
+    '4096',
+  ])('id → shortcode → id preserves %s', (id) => {
+    expect(idFromShortcode(shortcodeFromId(id))).toBe(id)
   })
 })

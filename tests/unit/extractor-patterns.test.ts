@@ -39,7 +39,7 @@ function groupsAfterSlice(
   return [...match].slice(1)
 }
 
-// ──── InstagramPostExtractor ────
+/** InstagramPostExtractor */
 
 describe('InstagramPostExtractor.pattern', () => {
   const { pattern } = InstagramPostExtractor
@@ -98,7 +98,7 @@ describe('InstagramPostExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramStoriesExtractor ────
+/** InstagramStoriesExtractor */
 
 describe('InstagramStoriesExtractor.pattern', () => {
   const { pattern } = InstagramStoriesExtractor
@@ -148,7 +148,7 @@ describe('InstagramStoriesExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramUserExtractor ────
+/** InstagramUserExtractor */
 
 describe('InstagramUserExtractor.pattern', () => {
   const { pattern } = InstagramUserExtractor
@@ -179,7 +179,7 @@ describe('InstagramUserExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramTagExtractor ────
+/** InstagramTagExtractor */
 
 describe('InstagramTagExtractor.pattern', () => {
   const { pattern } = InstagramTagExtractor
@@ -202,7 +202,7 @@ describe('InstagramTagExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramHighlightsExtractor ────
+/** InstagramHighlightsExtractor */
 
 describe('InstagramHighlightsExtractor.pattern', () => {
   const { pattern } = InstagramHighlightsExtractor
@@ -225,7 +225,7 @@ describe('InstagramHighlightsExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramSavedExtractor ────
+/** InstagramSavedExtractor */
 
 describe('InstagramSavedExtractor.pattern', () => {
   const { pattern } = InstagramSavedExtractor
@@ -245,7 +245,7 @@ describe('InstagramSavedExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramPostsExtractor ────
+/** InstagramPostsExtractor */
 
 describe('InstagramPostsExtractor.pattern', () => {
   const { pattern } = InstagramPostsExtractor
@@ -260,7 +260,7 @@ describe('InstagramPostsExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramReelsExtractor ────
+/** InstagramReelsExtractor */
 
 describe('InstagramReelsExtractor.pattern', () => {
   const { pattern } = InstagramReelsExtractor
@@ -271,7 +271,7 @@ describe('InstagramReelsExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramTaggedExtractor ────
+/** InstagramTaggedExtractor */
 
 describe('InstagramTaggedExtractor.pattern', () => {
   const { pattern } = InstagramTaggedExtractor
@@ -286,7 +286,7 @@ describe('InstagramTaggedExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramInfoExtractor ────
+/** InstagramInfoExtractor */
 
 describe('InstagramInfoExtractor.pattern', () => {
   const { pattern } = InstagramInfoExtractor
@@ -301,7 +301,7 @@ describe('InstagramInfoExtractor.pattern', () => {
   })
 })
 
-// ──── InstagramAvatarExtractor ────
+/** InstagramAvatarExtractor */
 
 describe('InstagramAvatarExtractor.pattern', () => {
   const { pattern } = InstagramAvatarExtractor
@@ -316,7 +316,7 @@ describe('InstagramAvatarExtractor.pattern', () => {
   })
 })
 
-// ──── Cross-extractor non-match matrix ────
+/** Cross-extractor non-match matrix */
 
 describe('cross-extractor non-match matrix', () => {
   const extractors = [
