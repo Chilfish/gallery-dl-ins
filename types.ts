@@ -5,9 +5,7 @@
  * which handler a Job should invoke.
  */
 
-// ---------------------------------------------------------------------------
-// HTTP abstraction
-// ---------------------------------------------------------------------------
+/** HTTP abstraction */
 
 export interface RequestConfig {
   headers?: Record<string, string>
@@ -44,19 +42,13 @@ export interface HttpClient {
   }) => Promise<HttpResponse<T>>
 }
 
-// ---------------------------------------------------------------------------
-// Storage abstraction
-// ---------------------------------------------------------------------------
+/** Storage abstraction */
 
 export interface Storage {
   exists: (path: string) => Promise<boolean>
   write: (path: string, data: Uint8Array | string) => Promise<void>
   mkdir: (path: string) => Promise<void>
 }
-
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
 
 export type ConfigValue
   = | string
@@ -68,9 +60,7 @@ export type ConfigValue
 
 export interface Config { [key: string]: ConfigValue }
 
-// ---------------------------------------------------------------------------
-// Metadata & messages
-// ---------------------------------------------------------------------------
+/** Metadata & messages */
 
 /**
  * Flat string-keyed metadata dictionary.
@@ -104,9 +94,7 @@ export type Message = DirectoryMsg | UrlMsg | QueueMsg
  */
 export type MessageIter = AsyncGenerator<Message, void, unknown>
 
-// ---------------------------------------------------------------------------
-// Extractor class reference (for Queue dispatch)
-// ---------------------------------------------------------------------------
+/** Extractor class reference (for Queue dispatch) */
 
 /**
  * Minimal shape that every Extractor class must expose so the Dispatch

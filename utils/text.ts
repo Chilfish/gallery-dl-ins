@@ -4,9 +4,7 @@
  * All functions are pure and environment-agnostic.
  */
 
-// ---------------------------------------------------------------------------
-// String extraction
-// ---------------------------------------------------------------------------
+/** String extraction */
 
 /**
  * Extract the substring between ``begin`` and ``end`` from ``txt``.
@@ -40,9 +38,7 @@ export function extr(
   return extract(txt, begin, end) ?? default_
 }
 
-// ---------------------------------------------------------------------------
-// Unicode / HTML
-// ---------------------------------------------------------------------------
+/** Unicode / HTML */
 
 /**
  * Decode ``\\uXXXX`` escape sequences in a string.
@@ -92,9 +88,7 @@ export function unescape(text: string): string {
   })
 }
 
-// ---------------------------------------------------------------------------
-// URL helpers
-// ---------------------------------------------------------------------------
+/** URL helpers */
 
 /**
  * URL-decode a string.

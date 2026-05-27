@@ -13,9 +13,7 @@ import { dirname } from 'node:path'
 import axios from 'axios'
 import { createCookieJar } from './cookies'
 
-// ---------------------------------------------------------------------------
-// NodeHttpClient — axios wrapper
-// ---------------------------------------------------------------------------
+/** NodeHttpClient — axios wrapper */
 
 /**
  * Extract csrftoken value from a Cookie header string.
@@ -115,9 +113,7 @@ export function createHttpClient(
   }
 }
 
-// ---------------------------------------------------------------------------
-// WebClient — anonymous cookie-jar HTTP client
-// ---------------------------------------------------------------------------
+/** WebClient — anonymous cookie-jar HTTP client */
 
 /**
  * Create an HTTP client with an in-memory cookie jar.
@@ -226,8 +222,6 @@ export async function createWebClient(
   return { http, csrfToken }
 }
 
-// ---------------------------------------------------------------------------
-
 function cleanupParams(
   params?: Record<string, string | number | null | undefined>,
 ): Record<string, string> | undefined {
@@ -241,9 +235,7 @@ function cleanupParams(
   return cleaned
 }
 
-// ---------------------------------------------------------------------------
-// NodeStorage — fs/promises wrapper
-// ---------------------------------------------------------------------------
+/** NodeStorage — fs/promises wrapper */
 
 export function createStorage(): Storage {
   return {
@@ -269,9 +261,7 @@ export function createStorage(): Storage {
   }
 }
 
-// ---------------------------------------------------------------------------
-// NodeLogger — console wrapper
-// ---------------------------------------------------------------------------
+/** NodeLogger — console wrapper */
 
 export function createLogger(verbose: boolean): Logger {
   return {

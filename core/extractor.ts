@@ -19,10 +19,6 @@ import type {
   Storage,
 } from '../types'
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface ExtractorOptions {
   url: string
   match: RegExpMatchArray
@@ -47,10 +43,6 @@ export const noopLogger: Logger = {
   warn: () => {},
   error: () => {},
 }
-
-// ---------------------------------------------------------------------------
-// Base class
-// ---------------------------------------------------------------------------
 
 export abstract class Extractor {
   /** Human-readable category (e.g. ``'instagram'``) */
@@ -90,9 +82,7 @@ export abstract class Extractor {
     this.log = opts.log
   }
 
-  // -----------------------------------------------------------------------
-  // Initialization
-  // -----------------------------------------------------------------------
+  /** Initialization */
 
   /**
    * One-time async setup (cookies, session, internal state).
@@ -114,9 +104,7 @@ export abstract class Extractor {
     // no-op by default
   }
 
-  // -----------------------------------------------------------------------
-  // Async iteration
-  // -----------------------------------------------------------------------
+  /** Async iteration */
 
   async* [Symbol.asyncIterator](): MessageIter {
     await this.initialize()
@@ -128,9 +116,7 @@ export abstract class Extractor {
    */
   abstract items(): MessageIter
 
-  // -----------------------------------------------------------------------
-  // Config helpers
-  // -----------------------------------------------------------------------
+  /** Config helpers */
 
   /**
    * Read a config value using the interpolated hierarchy.
@@ -144,9 +130,7 @@ export abstract class Extractor {
     return this.config.interpolate(path, key, defaultVal)
   }
 
-  // -----------------------------------------------------------------------
-  // HTTP
-  // -----------------------------------------------------------------------
+  /** HTTP */
 
   private _lastRequestTime = 0
 
@@ -181,9 +165,7 @@ export abstract class Extractor {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Rate limiting
-  // -----------------------------------------------------------------------
+  /** Rate limiting */
 
   /**
    * Sleep long enough to keep the minimum interval between requests.
@@ -200,9 +182,7 @@ export abstract class Extractor {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Utility
-  // -----------------------------------------------------------------------
+  /** Utility */
 
   /**
    * Convert a Unix timestamp (seconds or ms) to an ISO-8601 string.

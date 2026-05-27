@@ -10,20 +10,12 @@ import { shortcodeFromId } from '../utils/id-codec'
 import { ensureHttpScheme } from '../utils/text'
 import { InstagramExtractor } from './base'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const BASE_RE = /^(?:https?:\/\/)?(?:www\.)?instagram\.com/
 
 function re(base: RegExp, path: RegExp | string): RegExp {
   const pathSrc = typeof path === 'string' ? path : path.source
   return new RegExp(base.source + pathSrc, 'i')
 }
-
-// ---------------------------------------------------------------------------
-// InstagramPostExtractor
-// ---------------------------------------------------------------------------
 
 export class InstagramPostExtractor extends InstagramExtractor {
   static readonly subcategory = 'post'
@@ -76,10 +68,6 @@ export class InstagramPostExtractor extends InstagramExtractor {
     yield* this.api.media(shortcode)
   }
 }
-
-// ---------------------------------------------------------------------------
-// InstagramUserExtractor (Dispatch hub)
-// ---------------------------------------------------------------------------
 
 export class InstagramUserExtractor extends InstagramExtractor {
   static readonly subcategory = 'user'
@@ -172,10 +160,6 @@ export class InstagramUserExtractor extends InstagramExtractor {
   override async* posts(): AsyncGenerator<InstagramPost> {}
 }
 
-// ---------------------------------------------------------------------------
-// InstagramPostsExtractor
-// ---------------------------------------------------------------------------
-
 export class InstagramPostsExtractor extends InstagramExtractor {
   static readonly subcategory = 'posts'
   static override pattern = re(BASE_RE, /(\/[^/?#]+)\/posts/)
@@ -203,10 +187,6 @@ export class InstagramPostsExtractor extends InstagramExtractor {
   }
 }
 
-// ---------------------------------------------------------------------------
-// InstagramReelsExtractor
-// ---------------------------------------------------------------------------
-
 export class InstagramReelsExtractor extends InstagramExtractor {
   static readonly subcategory = 'reels'
   static override pattern = re(BASE_RE, /(\/[^/?#]+)\/reels/)
@@ -233,10 +213,6 @@ export class InstagramReelsExtractor extends InstagramExtractor {
     yield* this.api.userClips(uid)
   }
 }
-
-// ---------------------------------------------------------------------------
-// InstagramTaggedExtractor
-// ---------------------------------------------------------------------------
 
 export class InstagramTaggedExtractor extends InstagramExtractor {
   static readonly subcategory = 'tagged'
@@ -285,10 +261,6 @@ export class InstagramTaggedExtractor extends InstagramExtractor {
     yield* this.api.userTagged(this._taggedUserId)
   }
 }
-
-// ---------------------------------------------------------------------------
-// InstagramStoriesExtractor
-// ---------------------------------------------------------------------------
 
 export class InstagramStoriesExtractor extends InstagramExtractor {
   static readonly subcategory = 'stories'
@@ -368,10 +340,6 @@ export class InstagramStoriesExtractor extends InstagramExtractor {
   }
 }
 
-// ---------------------------------------------------------------------------
-// InstagramHighlightsExtractor
-// ---------------------------------------------------------------------------
-
 export class InstagramHighlightsExtractor extends InstagramExtractor {
   static readonly subcategory = 'highlights'
   static override pattern = re(BASE_RE, /(\/[^/?#]+)\/highlights/)
@@ -398,10 +366,6 @@ export class InstagramHighlightsExtractor extends InstagramExtractor {
     yield* this.api.highlightsMedia(uid)
   }
 }
-
-// ---------------------------------------------------------------------------
-// InstagramTagExtractor
-// ---------------------------------------------------------------------------
 
 export class InstagramTagExtractor extends InstagramExtractor {
   static readonly subcategory = 'tag'
@@ -433,10 +397,6 @@ export class InstagramTagExtractor extends InstagramExtractor {
     yield* this.api.tagsMedia(decodeURIComponent(tag))
   }
 }
-
-// ---------------------------------------------------------------------------
-// InstagramInfoExtractor
-// ---------------------------------------------------------------------------
 
 export class InstagramInfoExtractor extends InstagramExtractor {
   static readonly subcategory = 'info'
@@ -474,10 +434,6 @@ export class InstagramInfoExtractor extends InstagramExtractor {
 
   override async* posts(): AsyncGenerator<InstagramPost> {}
 }
-
-// ---------------------------------------------------------------------------
-// InstagramAvatarExtractor
-// ---------------------------------------------------------------------------
 
 export class InstagramAvatarExtractor extends InstagramExtractor {
   static readonly subcategory = 'avatar'
@@ -536,10 +492,6 @@ export class InstagramAvatarExtractor extends InstagramExtractor {
     } as unknown as InstagramPost
   }
 }
-
-// ---------------------------------------------------------------------------
-// InstagramSavedExtractor
-// ---------------------------------------------------------------------------
 
 export class InstagramSavedExtractor extends InstagramExtractor {
   static readonly subcategory = 'saved'

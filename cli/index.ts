@@ -30,9 +30,7 @@ import {
 } from '../instagram/extractors'
 import { createHttpClient, createLogger, createStorage, createWebClient, extractCsrfFromCookies } from './adapter'
 
-// ---------------------------------------------------------------------------
-// Shared options — applied to all subcommands
-// ---------------------------------------------------------------------------
+/** Shared options — applied to all subcommands */
 
 interface GlobalOptions {
   sessionid?: string
@@ -111,9 +109,7 @@ function addSharedOptions(cmd: Command): Command {
     )
 }
 
-// ---------------------------------------------------------------------------
-// Build config from parsed options
-// ---------------------------------------------------------------------------
+/** Build config from parsed options */
 
 function buildConfig(opts: GlobalOptions): ConfigManager {
   const config = new ConfigManager()
@@ -150,9 +146,7 @@ function buildConfig(opts: GlobalOptions): ConfigManager {
   return config
 }
 
-// ---------------------------------------------------------------------------
-// Run an extractor
-// ---------------------------------------------------------------------------
+/** Run an extractor */
 
 async function runExtractor(
   url: string,
@@ -222,9 +216,7 @@ async function runExtractor(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Program
-// ---------------------------------------------------------------------------
+/** Program */
 
 const program = new Command()
 

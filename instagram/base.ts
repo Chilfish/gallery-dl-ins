@@ -21,10 +21,6 @@ import { findTags, nameExtFromURL } from '../utils/text'
 import { InstagramRestAPI } from './api'
 import { parsePostGraphql, parsePostRest } from './parsers'
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface InstagramExtractorOptions extends ExtractorOptions {
   sessionId?: string
   cookies?: Record<string, string>
@@ -32,20 +28,12 @@ export interface InstagramExtractorOptions extends ExtractorOptions {
   csrfToken?: string
 }
 
-// ---------------------------------------------------------------------------
-// Reference holder
-// ---------------------------------------------------------------------------
-
 export class Ref<T> {
   value: T
   constructor(v: T) {
     this.value = v
   }
 }
-
-// ---------------------------------------------------------------------------
-// InstagramExtractor
-// ---------------------------------------------------------------------------
 
 export abstract class InstagramExtractor extends Extractor {
   override readonly category = 'instagram'
@@ -67,9 +55,7 @@ export abstract class InstagramExtractor extends Extractor {
     this._csrfSeed = opts.csrfToken
   }
 
-  // -----------------------------------------------------------------------
-  // Initialization
-  // -----------------------------------------------------------------------
+  /** Initialization */
 
   protected override async _init(): Promise<void> {
     // Use pre-seeded CSRF token if available (from anonymous cookie jar),
@@ -85,9 +71,7 @@ export abstract class InstagramExtractor extends Extractor {
     })
   }
 
-  // -----------------------------------------------------------------------
-  // Request override
-  // -----------------------------------------------------------------------
+  /** Request override */
 
   override async request(
     url: string,
@@ -115,17 +99,13 @@ export abstract class InstagramExtractor extends Extractor {
     return response
   }
 
-  // -----------------------------------------------------------------------
-  // Login
-  // -----------------------------------------------------------------------
+  /** Login */
 
   async login(): Promise<void> {
     this._loggedIn = true
   }
 
-  // -----------------------------------------------------------------------
-  // Core pipeline
-  // -----------------------------------------------------------------------
+  /** Core pipeline */
 
   override async* items(): MessageIter {
     await this.login()
@@ -237,9 +217,7 @@ export abstract class InstagramExtractor extends Extractor {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Subclass hooks
-  // -----------------------------------------------------------------------
+  /** Subclass hooks */
 
   /** @virtual */
   async metadata(): Promise<Record<string, unknown>> {
@@ -248,9 +226,7 @@ export abstract class InstagramExtractor extends Extractor {
 
   abstract posts(): AsyncGenerator<InstagramPost>
 
-  // -----------------------------------------------------------------------
-  // Cursor management
-  // -----------------------------------------------------------------------
+  /** Cursor management */
 
   protected _initCursor(): string | null {
     const cursor = this._cfg('cursor', true)
@@ -269,9 +245,7 @@ export abstract class InstagramExtractor extends Extractor {
     return cursor
   }
 
-  // -----------------------------------------------------------------------
-  // User assignment
-  // -----------------------------------------------------------------------
+  /** User assignment */
 
   protected _assignUser(user: InstagramUser): void {
     this._user = user

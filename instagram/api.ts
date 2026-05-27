@@ -12,16 +12,8 @@ import type {
 } from './types'
 import { idFromShortcode } from '../utils/id-codec'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const APP_ID = '936619743392459'
 const ASBD_ID = '129477'
-
-// ---------------------------------------------------------------------------
-// API class
-// ---------------------------------------------------------------------------
 
 export class InstagramRestAPI {
   private readonly http: HttpClient
@@ -60,9 +52,7 @@ export class InstagramRestAPI {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Public endpoint methods
-  // -----------------------------------------------------------------------
+  /** Public endpoint methods */
 
   /** Single post by shortcode. */
   async* media(shortcode: string): AsyncGenerator<InstagramPost> {
@@ -303,9 +293,7 @@ export class InstagramRestAPI {
     )
   }
 
-  // -----------------------------------------------------------------------
-  // Internal — HTTP call
-  // -----------------------------------------------------------------------
+  /** Internal — HTTP call */
 
   private async _call(
     endpoint: string,
@@ -386,9 +374,7 @@ export class InstagramRestAPI {
     return resp.data
   }
 
-  // -----------------------------------------------------------------------
-  // Pagination engines
-  // -----------------------------------------------------------------------
+  /** Pagination engines */
 
   private async* _pagination(
     endpoint: string,

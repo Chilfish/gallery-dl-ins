@@ -54,10 +54,6 @@ export {
   InstagramSavedExtractor,
 }
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface SDKOptions {
   /**
    * Full browser Cookie header string.
@@ -95,10 +91,6 @@ export interface ExtractOptions {
   limit?: number
 }
 
-// ---------------------------------------------------------------------------
-// InstagramSDK
-// ---------------------------------------------------------------------------
-
 export class InstagramSDK {
   readonly http: HttpClient
   readonly storage: Storage
@@ -121,9 +113,7 @@ export class InstagramSDK {
     this._csrfToken = opts.csrfToken
   }
 
-  // -----------------------------------------------------------------------
-  // Factory
-  // -----------------------------------------------------------------------
+  /** Factory */
 
   /**
    * Create an InstagramSDK instance.
@@ -157,9 +147,7 @@ export class InstagramSDK {
     return new InstagramSDK({ http, storage, log, config, csrfToken })
   }
 
-  // -----------------------------------------------------------------------
-  // High-level API
-  // -----------------------------------------------------------------------
+  /** High-level API */
 
   /**
    * Extract messages from an Instagram URL without downloading.
@@ -211,9 +199,7 @@ export class InstagramSDK {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Internal
-  // -----------------------------------------------------------------------
+  /** Internal */
 
   /**
    * Resolve a URL to an Extractor instance via pattern matching.
@@ -248,10 +234,6 @@ export class InstagramSDK {
     )
   }
 }
-
-// ---------------------------------------------------------------------------
-// Convenience export
-// ---------------------------------------------------------------------------
 
 /**
  * Shorthand: create an SDK instance with Node.js defaults.

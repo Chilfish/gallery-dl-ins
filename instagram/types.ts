@@ -5,9 +5,7 @@
  * (``/api/v1/…``).
  */
 
-// ---------------------------------------------------------------------------
-// API response types
-// ---------------------------------------------------------------------------
+/** API response types */
 
 export interface InstagramUser {
   pk: string
@@ -157,9 +155,7 @@ export interface InstagramCarouselItem {
   story_bloks_stickers?: BloksSticker[]
 }
 
-// ---------------------------------------------------------------------------
-// Parsed post (normalized output)
-// ---------------------------------------------------------------------------
+/** Parsed post (normalized output) */
 
 export interface ParsedPost {
   post_id: string
@@ -235,9 +231,7 @@ export interface TaggedUser {
   full_name: string
 }
 
-// ---------------------------------------------------------------------------
-// Parser config
-// ---------------------------------------------------------------------------
+/** Parser config */
 
 export interface ParserConfig {
   root: string

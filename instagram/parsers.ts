@@ -16,9 +16,7 @@ import type {
 } from './types'
 import { shortcodeFromId } from '../utils/id-codec'
 
-// ---------------------------------------------------------------------------
-// Main entry — REST
-// ---------------------------------------------------------------------------
+/** Main entry — REST */
 
 export function parsePostRest(
   post: InstagramPost,
@@ -142,9 +140,7 @@ export function parsePostRest(
   return data
 }
 
-// ---------------------------------------------------------------------------
-// Story / highlight
-// ---------------------------------------------------------------------------
+/** Story / highlight */
 
 function parseStoryRest(post: InstagramPost, cfg: ParserConfig): ParsedPost {
   const items = post.items!
@@ -202,9 +198,7 @@ function parseStoryRest(post: InstagramPost, cfg: ParserConfig): ParsedPost {
   return data
 }
 
-// ---------------------------------------------------------------------------
-// Single media item
-// ---------------------------------------------------------------------------
+/** Single media item */
 
 function parseMediaItem(
   item: InstagramCarouselItem,
@@ -311,9 +305,7 @@ function parseMediaItem(
   return media
 }
 
-// ---------------------------------------------------------------------------
-// Tagged users
-// ---------------------------------------------------------------------------
+/** Tagged users */
 
 export function extractTaggedUsers(
   src: Record<string, unknown>,
@@ -405,9 +397,7 @@ export function extractTaggedUsers(
   })
 }
 
-// ---------------------------------------------------------------------------
-// Audio / music extraction
-// ---------------------------------------------------------------------------
+/** Audio / music extraction */
 
 export function extractAudio(
   src: Record<string, unknown>,
@@ -452,9 +442,7 @@ export function extractAudio(
   }
 }
 
-// ---------------------------------------------------------------------------
-// GraphQL parser
-// ---------------------------------------------------------------------------
+/** GraphQL parser */
 
 export function parsePostGraphql(
   post: Record<string, unknown>,
@@ -578,10 +566,6 @@ export function parsePostGraphql(
 
   return data
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function extractPinned(post: InstagramPost): string[] {
   if (post.timeline_pinned_user_ids)

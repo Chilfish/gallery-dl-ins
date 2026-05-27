@@ -17,10 +17,6 @@ import type {
 } from '../types'
 import type { Extractor } from './extractor'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function formatBytes(bytes: number): string {
   if (bytes === 0)
     return '0 B'
@@ -29,10 +25,6 @@ function formatBytes(bytes: number): string {
   const val = bytes / 1024 ** i
   return `${val.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
-
-// ---------------------------------------------------------------------------
-// Job (abstract)
-// ---------------------------------------------------------------------------
 
 export abstract class Job {
   readonly extractor: Extractor
@@ -77,10 +69,6 @@ export abstract class Job {
   abstract handleUrl(msg: UrlMsg): Promise<void>
   abstract handleQueue(msg: QueueMsg): Promise<void>
 }
-
-// ---------------------------------------------------------------------------
-// DownloadJob
-// ---------------------------------------------------------------------------
 
 /** An in-memory archive: category → Set<archive-key>. */
 type ArchiveMap = Map<string, Set<string>>
@@ -143,9 +131,7 @@ export class DownloadJob extends Job {
     set.add(key)
   }
 
-  // -----------------------------------------------------------------------
-  // Handlers
-  // -----------------------------------------------------------------------
+  /** Handlers */
 
   async handleDirectory(msg: DirectoryMsg): Promise<void> {
     this._currentDir = { ...msg.metadata }
@@ -266,9 +252,7 @@ export class DownloadJob extends Job {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Report
-  // -----------------------------------------------------------------------
+  /** Report */
 
   protected override _report(): void {
     const log = this.extractor.log
@@ -280,9 +264,7 @@ export class DownloadJob extends Job {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Path builders
-  // -----------------------------------------------------------------------
+  /** Path builders */
 
   private _buildDirPath(meta: Metadata): string {
     const cat = meta.category ?? this.extractor.category
