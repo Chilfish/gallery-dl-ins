@@ -85,11 +85,13 @@ if (k.toLowerCase() === 'cookie' && mergedHeaders.Cookie) {
 bun install
 
 # 开发运行 CLI（直接跑 TS）
-bun cli/index.ts <command> [options]
+bun cli/index.ts <url> [options]
 
 # 示例
-bun cli/index.ts post https://www.instagram.com/p/ABC123/ -v --cookies="..."
-bun cli/index.ts user https://www.instagram.com/user/ -v --cookies="..."
+bun cli/index.ts https://www.instagram.com/p/ABC123/ -v --cookies="..."
+bun cli/index.ts https://www.instagram.com/username/ -v --cookies="..."
+bun cli/index.ts tag cats -v --cookies="..."
+bun cli/index.ts saved --cookies="..."
 
 # 类型检查
 bun run typecheck

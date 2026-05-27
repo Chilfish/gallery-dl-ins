@@ -45,8 +45,7 @@ export class InstagramPostExtractor extends InstagramExtractor {
 
   override async* posts(): AsyncGenerator<InstagramPost> {
     const groups = this.groups as string[]
-    let shortcode: string | undefined
-      = groups[4] ?? groups[3] ?? groups[2] ?? groups[1]
+    let shortcode: string | undefined = groups[0]
     if (!shortcode)
       return
 

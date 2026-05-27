@@ -78,7 +78,7 @@ export abstract class Extractor {
 
   constructor(opts: ExtractorOptions) {
     this.url = opts.url
-    this.groups = opts.match ? [...opts.match] : []
+    this.groups = opts.match ? [...opts.match].slice(1) : []
     this.config = opts.config
     this.http = opts.http
     this.storage = opts.storage

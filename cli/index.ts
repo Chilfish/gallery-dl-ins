@@ -3,14 +3,9 @@
  * gdl-instagram — CLI entry point.
  *
  * Usage:
- *   gdl-instagram post <url> [options]
- *   gdl-instagram user <url> [options]
- *   gdl-instagram stories <url> [options]
- *   gdl-instagram highlights <url> [options]
+ *   gdl-instagram <url> [options]          ← auto-detect from URL
  *   gdl-instagram tag <hashtag> [options]
  *   gdl-instagram saved [options]
- *   gdl-instagram info <url>
- *   gdl-instagram avatar <url>
  *
  * Every option is self-documented via ``--help``.
  */
@@ -19,9 +14,7 @@ import { Command } from 'commander'
 import { ConfigManager } from '../config'
 import { DownloadJob } from '../core/job'
 import {
-  InstagramAvatarExtractor,
   InstagramHighlightsExtractor,
-  InstagramInfoExtractor,
   InstagramPostExtractor,
   InstagramSavedExtractor,
   InstagramStoriesExtractor,
@@ -146,6 +139,31 @@ function buildConfig(opts: GlobalOptions): ConfigManager {
   return config
 }
 
+/** Auto-detect the right extractor for a URL */
+
+function resolveExtractor(url: string): {
+  new (opts: any): any
+  readonly pattern: RegExp
+} {
+  for (const Cls of [
+    InstagramPostExtractor,
+    InstagramStoriesExtractor,
+    InstagramHighlightsExtractor,
+    InstagramTagExtractor,
+    InstagramSavedExtractor,
+    InstagramUserExtractor,
+  ]) {
+    if (Cls.pattern.test(url)) {
+      return Cls
+    }
+  }
+
+  throw new Error(
+    `No extractor matched URL: ${url}. `
+    + 'Supported: /p/, /reel/, /{user}/, /stories/, /highlights/, /explore/tags/, /saved/',
+  )
+}
+
 /** Run an extractor */
 
 async function runExtractor(
@@ -232,66 +250,30 @@ program
   )
   .version('0.1.0')
 
-// ── post ──
-const post = program
-  .command('post <url>')
-  .description(
-    'Download a single Instagram post, reel, or share link\n\n'
-    + 'Examples:\n'
-    + '  gdl-instagram post https://www.instagram.com/p/CxAbCdEfGh/\n'
-    + '  gdl-instagram post https://www.instagram.com/share/BAEvGtChfT/\n'
-    + '  gdl-instagram post https://www.instagram.com/reel/CxAbCdEfGh/',
-  )
-  .action(async (url: string, opts: GlobalOptions) => {
-    await runExtractor(url, InstagramPostExtractor, opts)
-  })
-addSharedOptions(post)
+/** Default command — auto-detect extractor from URL */
 
-// ── user ──
-const user = program
-  .command('user <url>')
+const dlCmd = program
+  .command('dl', { isDefault: true })
+  .argument('[url]', 'Instagram URL to download (auto-detects type)')
   .description(
-    'Download all content from an Instagram user profile\n\n'
-    + 'By default downloads posts only. Use --include to add reels,\n'
-    + 'tagged, stories, highlights, info, or avatar.\n\n'
+    'Download media from an Instagram URL (auto-detects post/user/stories/…)\n\n'
     + 'Examples:\n'
-    + '  gdl-instagram user https://www.instagram.com/username/\n'
-    + '  gdl-instagram user https://www.instagram.com/username/ --include=posts,reels,stories',
+    + '  gdl-instagram https://www.instagram.com/p/CxAbCdEfGh/\n'
+    + '  gdl-instagram https://www.instagram.com/username/ --include=posts,reels\n'
+    + '  gdl-instagram https://www.instagram.com/stories/username/',
   )
-  .action(async (url: string, opts: GlobalOptions) => {
-    await runExtractor(url, InstagramUserExtractor, opts)
+  .action(async (url: string | undefined, opts: GlobalOptions) => {
+    if (!url) {
+      program.help()
+      return
+    }
+    const ExtrClass = resolveExtractor(url)
+    await runExtractor(url, ExtrClass, opts)
   })
-addSharedOptions(user)
+addSharedOptions(dlCmd)
 
-// ── stories ──
-const stories = program
-  .command('stories <url>')
-  .description(
-    'Download stories from an Instagram user\n\n'
-    + 'Examples:\n'
-    + '  gdl-instagram stories https://www.instagram.com/stories/username/\n'
-    + '  gdl-instagram stories https://www.instagram.com/stories/highlights/12345/\n'
-    + '  gdl-instagram stories --split https://www.instagram.com/stories/username/',
-  )
-  .action(async (url: string, opts: GlobalOptions) => {
-    await runExtractor(url, InstagramStoriesExtractor, opts)
-  })
-addSharedOptions(stories)
+/** tag subcommand */
 
-// ── highlights ──
-const highlights = program
-  .command('highlights <url>')
-  .description(
-    'Download all story highlights from an Instagram user\n\n'
-    + 'Examples:\n'
-    + '  gdl-instagram highlights https://www.instagram.com/username/highlights/',
-  )
-  .action(async (url: string, opts: GlobalOptions) => {
-    await runExtractor(url, InstagramHighlightsExtractor, opts)
-  })
-addSharedOptions(highlights)
-
-// ── tag ──
 const tag = program
   .command('tag <hashtag>')
   .description(
@@ -309,7 +291,8 @@ const tag = program
   })
 addSharedOptions(tag)
 
-// ── saved ──
+/** saved subcommand */
+
 const saved = program
   .command('saved')
   .description(
@@ -324,71 +307,6 @@ const saved = program
   })
 addSharedOptions(saved)
 
-// ── info ──
-program
-  .command('info <url>')
-  .description(
-    'Fetch and display Instagram user profile metadata\n\n'
-    + 'Examples:\n'
-    + '  gdl-instagram info https://www.instagram.com/username/',
-  )
-  .action(async (url: string, opts: GlobalOptions) => {
-    const config = buildConfig(opts)
-    const log = createLogger(opts.verbose ?? false)
-    let http: ReturnType<typeof createHttpClient>
-    let webCsrf: string | undefined
+/** parse */
 
-    if (opts.cookies) {
-      http = createHttpClient(undefined, opts.cookies, log)
-      webCsrf = extractCsrfFromCookies(opts.cookies)
-    }
-    else if (opts.sessionid) {
-      http = createHttpClient(opts.sessionid, undefined, log)
-    }
-    else {
-      const wc = await createWebClient(log)
-      http = wc.http
-      webCsrf = wc.csrfToken
-    }
-    const storage = createStorage()
-
-    const match = InstagramInfoExtractor.pattern.exec(url)
-    if (!match) {
-      console.error(`URL did not match: ${url}`)
-      process.exit(1)
-    }
-
-    const extractor = new InstagramInfoExtractor({
-      url,
-      match,
-      config,
-      http,
-      storage,
-      log,
-      sessionId: opts.sessionid,
-      csrfToken: webCsrf,
-    })
-
-    await extractor.initialize()
-    for await (const msg of extractor) {
-      if (msg.type === 'directory') {
-        console.log(JSON.stringify(msg.metadata, null, 2))
-      }
-    }
-  })
-
-// ── avatar ──
-const avatar = program
-  .command('avatar <url>')
-  .description(
-    'Download an Instagram user\'s profile picture (HD)\n\n'
-    + 'Examples:\n'
-    + '  gdl-instagram avatar https://www.instagram.com/username/',
-  )
-  .action(async (url: string, opts: GlobalOptions) => {
-    await runExtractor(url, InstagramAvatarExtractor, opts)
-  })
-addSharedOptions(avatar)
-
-// ── parse ──
 program.parse()

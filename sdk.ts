@@ -34,21 +34,31 @@ import { ConfigManager } from './config'
 import { noopLogger } from './core/extractor'
 import { DownloadJob } from './core/job'
 import {
+  InstagramAvatarExtractor,
   InstagramHighlightsExtractor,
+  InstagramInfoExtractor,
   InstagramPostExtractor,
+  InstagramPostsExtractor,
+  InstagramReelsExtractor,
   InstagramSavedExtractor,
   InstagramStoriesExtractor,
   InstagramTagExtractor,
+  InstagramTaggedExtractor,
   InstagramUserExtractor,
 } from './instagram/extractors'
 
 // Re-export sub-extractor classes for type use
 export {
+  InstagramAvatarExtractor,
   InstagramHighlightsExtractor,
+  InstagramInfoExtractor,
   InstagramPostExtractor,
+  InstagramPostsExtractor,
+  InstagramReelsExtractor,
   InstagramSavedExtractor,
   InstagramStoriesExtractor,
   InstagramTagExtractor,
+  InstagramTaggedExtractor,
   InstagramUserExtractor,
 }
 
@@ -205,11 +215,16 @@ export class InstagramSDK {
   private _resolve(url: string): Extractor {
     for (const Cls of [
       InstagramPostExtractor,
-      InstagramUserExtractor,
       InstagramStoriesExtractor,
       InstagramHighlightsExtractor,
       InstagramTagExtractor,
       InstagramSavedExtractor,
+      InstagramPostsExtractor,
+      InstagramReelsExtractor,
+      InstagramTaggedExtractor,
+      InstagramInfoExtractor,
+      InstagramAvatarExtractor,
+      InstagramUserExtractor,
     ]) {
       const match = Cls.pattern.exec(url)
       if (match) {
