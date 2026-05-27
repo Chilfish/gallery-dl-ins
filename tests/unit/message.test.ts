@@ -44,7 +44,7 @@ describe('queue', () => {
   })
 
   it('includes _extractor in metadata when provided', () => {
-    const mockExtractor = { fromURL: () => null, subcategory: 'posts' }
+    const mockExtractor = { pattern: /posts/, subcategory: 'posts' }
     const msg = queue('https://www.instagram.com/user/posts/', {
       _extractor: mockExtractor as any,
     })

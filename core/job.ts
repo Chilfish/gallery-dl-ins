@@ -221,33 +221,55 @@ export class DownloadJob extends Job {
     const extrClass = meta._extractor
     if (!extrClass || typeof extrClass !== 'object')
       return
-    const cls = extrClass as { fromURL: (url: string) => Extractor | null }
 
-    const childExtr = cls.fromURL(msg.url)
-    if (!childExtr)
+    // The _extractor in metadata is a static class reference
+    // Use its pattern to match the URL, then construct with parent deps
+    const cls = extrClass as unknown as {
+      pattern: RegExp
+      subcategory: string
+      new (opts: Record<string, unknown>): Extractor
+    }
+
+    const match = cls.pattern.exec(msg.url)
+    if (!match)
       return
 
+    // Construct child extractor with parent's http/storage/log/config
+    const parentExtr = this.extractor
+    const childExtr = Reflect.construct(cls, [{
+      url: msg.url,
+      match,
+      config: parentExtr.config,
+      http: parentExtr.http,
+      storage: parentExtr.storage,
+      log: parentExtr.log,
+    }])
+
     const childJob = new DownloadJob(childExtr)
-    childJob._currentDir = meta
-    // Propagate archive
-    for (const [cat, set] of this.archive) {
-      childJob.archive.set(cat, new Set(set))
+    childJob.basePath = (this as any).basePath
+
+    // Propagate current directory metadata
+    ;(childJob as any)._currentDir = meta
+
+    // Propagate archive state
+    for (const [cat, set] of (this as any).archive) {
+      ;(childJob as any).archive.set(cat, new Set(set))
     }
-    for (const [cat, fmt] of this._archiveFmts) {
-      childJob._archiveFmts.set(cat, fmt)
+    for (const [cat, fmt] of (this as any)._archiveFmts) {
+      ;(childJob as any)._archiveFmts.set(cat, fmt)
     }
 
     const childStatus = await childJob.run()
     this.status |= childStatus
 
-    // Merge back any new archive entries
-    for (const [cat, set] of childJob.archive) {
-      const mine = this.archive.get(cat)
+    // Merge back new archive entries
+    for (const [cat, set] of (childJob as any).archive) {
+      const mine = (this as any).archive.get(cat)
       if (mine) {
-        for (const k of set) mine.add(k)
+        for (const k of set as Set<string>) (mine as Set<string>).add(k)
       }
       else {
-        this.archive.set(cat, set)
+        ;(this as any).archive.set(cat, set)
       }
     }
   }
