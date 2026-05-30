@@ -8,7 +8,9 @@
 ```
 入口:
   index.ts         # barrel export — 全量 API 导出
-  sdk.ts           # 高层 SDK — createSDK({cookies}) 一行起手
+  sdk.ts           # 平台无关 SDK — InstagramSDK class
+  node-factory.ts  # Node.js 工厂 — createSDK({cookies})
+  node.ts          # Node.js barrel — 从 node-factory 重导出
   cli/index.ts     # CLI — gdl-instagram <command>
 
 核心:
@@ -183,7 +185,7 @@ async initialize(): Promise<void> { … }
 高层 API（推荐给 SDK 使用者）：
 
 ```typescript
-import { createSDK } from '@chilfish/gallery-dl-instagram'
+import { createSDK } from '@chilfish/gallery-dl-instagram/node'
 
 const ig = await createSDK({
   cookies: 'ds_user_id=...; sessionid=...; csrftoken=...',

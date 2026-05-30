@@ -23,7 +23,7 @@ npm install @chilfish/gallery-dl-instagram
 ### SDK 使用
 
 ```ts
-import { createSDK } from '@chilfish/gallery-dl-instagram'
+import { createSDK } from '@chilfish/gallery-dl-instagram/node'
 
 const ig = await createSDK({
   cookies: 'ds_user_id=...; sessionid=...; csrftoken=...',

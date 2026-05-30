@@ -13,7 +13,7 @@ bun add @chilfish/gallery-dl-instagram
 ### 一行代码下载
 
 ```ts
-import { createSDK } from '@chilfish/gallery-dl-instagram'
+import { createSDK } from '@chilfish/gallery-dl-instagram/node'
 
 const ig = await createSDK({
   cookies: 'ds_user_id=...; sessionid=...; csrftoken=...; ig_did=...',
@@ -57,6 +57,8 @@ SDK 提供三层入口，按需选用：
 
 ```ts
 // Node.js：一行代码（自动创建 axios adapter）
+import { createSDK } from '@chilfish/gallery-dl-instagram/node'
+
 const ig = await createSDK({
   cookies: 'ds_user_id=...; sessionid=...; csrftoken=...; ig_did=...',
 })

@@ -11,27 +11,28 @@
     "gallery-dl",
     "cli"
   ],
+  "sideEffects": false,
   "exports": {
-    ".": "./dist/index.mjs",
-    "./cli": "./dist/cli/index.mjs",
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./node": {
+      "import": "./dist/node.mjs",
+      "require": "./dist/node.cjs"
+    },
     "./package.json": "./package.json"
   },
-  "types": "./dist/index.d.mts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
   "bin": {
-    "gallery-dl-instagram": "./dist/cli/index.mjs"
+    "gallery-dl-instagram": "./dist/cli/index.cjs"
   },
   "files": [
-    "!*.log",
-    "!node_modules",
-    "cli/",
-    "config.ts",
-    "core/",
-    "dist/",
-    "index.ts",
-    "instagram/",
-    "message.ts",
-    "types.ts",
-    "utils/"
+    "LICENSE",
+    "README.md",
+    "dist"
   ],
   "engines": {
     "node": ">=18"
@@ -47,12 +48,19 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration"
   },
-  "dependencies": {
-    "axios": "^1.16.1"
+  "peerDependencies": {
+    "axios": "^1.0.0"
   },
+  "peerDependenciesMeta": {
+    "axios": {
+      "optional": true
+    }
+  },
+  "dependencies": {},
   "devDependencies": {
     "@antfu/eslint-config": "^9.0.0",
     "@types/node": "^25.9.1",
+    "axios": "^1.16.1",
     "commander": "^15.0.0",
     "dotenv": "^17.4.2",
     "eslint": "^10.4.1",
