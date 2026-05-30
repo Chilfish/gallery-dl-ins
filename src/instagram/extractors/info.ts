@@ -21,7 +21,8 @@ export class InstagramInfoExtractor extends InstagramExtractor {
     opts: InstagramExtractorOptions,
   ): InstagramInfoExtractor | null {
     const match = InstagramInfoExtractor.pattern.exec(url)
-    if (!match) return null
+    if (!match)
+      return null
     return new InstagramInfoExtractor({ ...opts, url, match })
   }
 

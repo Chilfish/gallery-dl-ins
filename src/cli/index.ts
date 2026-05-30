@@ -8,10 +8,10 @@
  *   gdl-instagram saved [options]
  */
 
+import type { GlobalOptions } from './options'
 import { Command } from 'commander'
 import packageJSON from '../../package.json'
 import { InstagramSavedExtractor, InstagramTagExtractor } from '../instagram/extractors'
-import type { GlobalOptions } from './options'
 import { addSharedOptions } from './options'
 import { resolveExtractor, runExtractor } from './runner'
 
@@ -40,7 +40,10 @@ const dlCmd = program
     + '  gdl-instagram https://www.instagram.com/stories/username/',
   )
   .action(async (url: string | undefined, opts: GlobalOptions) => {
-    if (!url) { program.help(); return }
+    if (!url) {
+      program.help()
+      return
+    }
     await runExtractor(url, resolveExtractor(url), opts)
   })
 addSharedOptions(dlCmd)

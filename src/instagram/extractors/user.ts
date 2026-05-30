@@ -4,8 +4,7 @@ import type { InstagramPost } from '../types'
 import { queue } from '../../message'
 import { InstagramExtractor } from '../base'
 import { BASE_RE, re } from './helpers'
-import { get } from './registry'
-import { register } from './registry'
+import { get, register } from './registry'
 
 export class InstagramUserExtractor extends InstagramExtractor {
   static readonly subcategory = 'user'
@@ -22,7 +21,8 @@ export class InstagramUserExtractor extends InstagramExtractor {
     opts: InstagramExtractorOptions,
   ): InstagramUserExtractor | null {
     const match = InstagramUserExtractor.pattern.exec(url)
-    if (!match) return null
+    if (!match)
+      return null
     return new InstagramUserExtractor({ ...opts, url, match })
   }
 

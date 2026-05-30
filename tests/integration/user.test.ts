@@ -1,8 +1,8 @@
 import type { Message, Storage } from '../../src/types'
 import { describe, expect, it } from 'vitest'
 import { ConfigManager } from '../../src/config'
-import { noopLogger } from '../../src/core/extractor'
 import { DownloadJob } from '../../src/core/download-job'
+import { noopLogger } from '../../src/core/extractor'
 import { InstagramUserExtractor } from '../../src/instagram/extractors'
 import { MockHttpClient } from '../helpers/mock-http'
 

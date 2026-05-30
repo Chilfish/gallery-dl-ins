@@ -19,7 +19,8 @@ export class InstagramSavedExtractor extends InstagramExtractor {
     opts: InstagramExtractorOptions,
   ): InstagramSavedExtractor | null {
     const match = InstagramSavedExtractor.pattern.exec(url)
-    if (!match) return null
+    if (!match)
+      return null
     return new InstagramSavedExtractor({ ...opts, url, match })
   }
 

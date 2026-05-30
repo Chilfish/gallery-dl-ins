@@ -4,8 +4,8 @@
 
 import type { DirectoryMsg, Metadata, QueueMsg, UrlMsg } from '../types'
 import type { Extractor } from './extractor'
-import { Job } from './job'
 import { formatBytes } from './format'
+import { Job } from './job'
 
 type ArchiveMap = Map<string, Set<string>>
 
@@ -121,7 +121,8 @@ export class DownloadJob extends Job {
   async handleQueue(msg: QueueMsg): Promise<void> {
     const meta = { ...this._currentDir, ...msg.metadata }
     const extrClass = meta._extractor
-    if (!extrClass || typeof extrClass !== 'object') return
+    if (!extrClass || typeof extrClass !== 'object')
+      return
 
     const cls = extrClass as unknown as {
       pattern: RegExp
@@ -130,7 +131,8 @@ export class DownloadJob extends Job {
     }
 
     const match = cls.pattern.exec(msg.url)
-    if (!match) return
+    if (!match)
+      return
 
     const parentExtr = this.extractor
     const childExtr = Reflect.construct(cls, [{

@@ -20,7 +20,8 @@ export class InstagramAvatarExtractor extends InstagramExtractor {
     opts: InstagramExtractorOptions,
   ): InstagramAvatarExtractor | null {
     const match = InstagramAvatarExtractor.pattern.exec(url)
-    if (!match) return null
+    if (!match)
+      return null
     return new InstagramAvatarExtractor({ ...opts, url, match })
   }
 

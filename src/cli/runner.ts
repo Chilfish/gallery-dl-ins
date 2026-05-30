@@ -1,5 +1,6 @@
 /** Extract-and-run logic shared across CLI commands. */
 
+import type { GlobalOptions } from './options'
 import { DownloadJob } from '../core/download-job'
 import { PrintJob } from '../core/print-job'
 import {
@@ -11,11 +12,10 @@ import {
   InstagramUserExtractor,
 } from '../instagram/extractors'
 import { createHttpClient, createLogger, createWebClient, extractCsrfFromCookies } from './adapter'
-import { createStorage } from './storage'
-import type { GlobalOptions } from './options'
 import { buildConfig } from './options'
+import { createStorage } from './storage'
 
-type ExtrLike = {
+interface ExtrLike {
   new (opts: any): any
   readonly pattern: RegExp
 }
@@ -29,7 +29,8 @@ export function resolveExtractor(url: string): ExtrLike {
     InstagramSavedExtractor,
     InstagramUserExtractor,
   ]) {
-    if (Cls.pattern.test(url)) return Cls
+    if (Cls.pattern.test(url))
+      return Cls
   }
 
   throw new Error(
@@ -86,7 +87,8 @@ export async function runExtractor(
     try {
       const status = await job.run()
       const elapsed = ((Date.now() - start) / 1000).toFixed(1)
-      if (status !== 0) log.warn(`Finished with status ${status} in ${elapsed}s`)
+      if (status !== 0)
+        log.warn(`Finished with status ${status} in ${elapsed}s`)
     }
     catch (err) {
       log.error(String(err))
@@ -102,7 +104,8 @@ export async function runExtractor(
   try {
     const status = await job.run()
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
-    if (status === 0) log.info(`Done in ${elapsed}s`)
+    if (status === 0)
+      log.info(`Done in ${elapsed}s`)
     else log.warn(`Finished with status ${status} in ${elapsed}s`)
   }
   catch (err) {

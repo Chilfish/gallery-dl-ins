@@ -24,7 +24,7 @@ export { extractCsrf as extractCsrfFromCookies }
 export function createHttpClient(
   sessionId?: string,
   fullCookies?: string,
-  logger?: Logger,
+  _logger?: Logger,
 ): HttpClient {
   const baseCookie = fullCookies
     || (sessionId ? `sessionid=${sessionId}` : null)

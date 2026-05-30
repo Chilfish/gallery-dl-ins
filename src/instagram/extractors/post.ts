@@ -26,14 +26,16 @@ export class InstagramPostExtractor extends InstagramExtractor {
     opts: InstagramExtractorOptions,
   ): InstagramPostExtractor | null {
     const match = InstagramPostExtractor.pattern.exec(url)
-    if (!match) return null
+    if (!match)
+      return null
     return new InstagramPostExtractor({ ...opts, url, match })
   }
 
   override async* posts(): AsyncGenerator<InstagramPost> {
     const groups = this.groups as string[]
     let shortcode: string | undefined = groups[0]
-    if (!shortcode) return
+    if (!shortcode)
+      return
 
     if (groups[1] === '') {
       this.log.info(`Resolving share link: ${this.url}`)

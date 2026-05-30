@@ -1,6 +1,6 @@
 /**
- * Instagram post parsers — normalize raw API responses into a uniform
- * ``ParsedPost`` structure.
+ * REST response parsers — normalize Instagram REST API responses into
+ * uniform ``ParsedPost`` structures.
  */
 
 import type {
@@ -13,21 +13,18 @@ import type {
   ParsedPost,
   ParserConfig,
   VideoVersion,
-} from './types'
-import { shortcodeFromId } from '../utils/id-codec'
+} from '../types'
+import { shortcodeFromId } from '../../utils/id-codec'
 
-/** Main entry — REST */
+/** Main entry — parse a REST post response. */
 
 export function parsePostRest(
   post: InstagramPost,
   cfg: ParserConfig,
 ): ParsedPost {
-  // ── Story or highlight (has top-level "items") ──
-  if (post.items) {
+  if (post.items)
     return parseStoryRest(post, cfg)
-  }
 
-  // ── Regular post / carousel ──
   const owner = post.user
   const caption = post.caption
   const ts = post.taken_at ?? post.created_at
@@ -51,22 +48,17 @@ export function parsePostRest(
     _files: [],
   }
 
-  // Description & tags
   const tags = cfg.findTags(data.description)
-  if (tags.length > 0) {
+  if (tags.length > 0)
     data.tags = [...new Set(tags)].sort()
-  }
 
-  // Location
   if (post.location) {
     const loc = post.location
-    const slug = loc.short_name.replace(/\s+/g, '-').toLowerCase()
     data.location_id = loc.pk
-    data.location_slug = slug
-    data.location_url = `${cfg.root}/explore/locations/${loc.pk}/${slug}/`
+    data.location_slug = loc.short_name.replace(/\s+/g, '-').toLowerCase()
+    data.location_url = `${cfg.root}/explore/locations/${loc.pk}/${data.location_slug}/`
   }
 
-  // Coauthors
   if (post.coauthor_producers) {
     data.coauthors = post.coauthor_producers.map(u => ({
       id: u.pk,
@@ -75,7 +67,6 @@ export function parsePostRest(
     }))
   }
 
-  // Determine items (carousel vs single)
   let items: readonly InstagramCarouselItem[]
   if (post.carousel_media?.length) {
     data.sidecar_media_id = data.post_id
@@ -86,7 +77,6 @@ export function parsePostRest(
     items = [post as unknown as InstagramCarouselItem]
   }
 
-  // Parse each media item
   for (let num = 0; num < items.length; num++) {
     const item = items[num]!
     const media = parseMediaItem(item, post, cfg, num + 1)
@@ -97,7 +87,6 @@ export function parsePostRest(
     extractTaggedUsers(itemRec, media)
     data._files.push(media)
 
-    // Story music stickers
     const stickers = itemRec.story_music_stickers as MusicSticker[] | undefined
     if (stickers?.[0]) {
       const audio = extractAudio(itemRec, data as unknown as Record<string, unknown>, stickers[0], cfg)
@@ -108,7 +97,6 @@ export function parsePostRest(
     }
   }
 
-  // Music metadata on the post itself
   if (post.music_metadata) {
     const info = post.music_metadata.music_info
     if (info) {
@@ -125,31 +113,24 @@ export function parsePostRest(
     }
   }
 
-  // Set type & post URL
   const files = data._files
   if (files.length === 1 && files[0]!.video_url) {
     data.type = 'reel'
     data.post_url = `${cfg.root}/reel/${post.code}/`
   }
 
-  // Subscription
-  if (post.subscription_media_visibility) {
+  if (post.subscription_media_visibility)
     data.subscription = post.subscription_media_visibility
-  }
 
   return data
 }
 
-/** Story / highlight */
+/** Parse a story or highlight REST response. */
 
 function parseStoryRest(post: InstagramPost, cfg: ParserConfig): ParsedPost {
   const items = post.items!
   const reelId = String(post.id).split(':').pop() ?? '0'
-
-  const date = cfg.parseTimestamp(
-    (post.taken_at ?? post.created_at ?? post.seen) ?? null,
-  )
-
+  const date = cfg.parseTimestamp((post.taken_at ?? post.created_at ?? post.seen) ?? null)
   const expires = post.expiring_at
   const isStory = !!expires
 
@@ -175,30 +156,24 @@ function parseStoryRest(post: InstagramPost, cfg: ParserConfig): ParsedPost {
     user: post.user,
   }
 
-  if (!isStory) {
-    if (post.title)
-      data.highlight_title = post.title
-  }
-  else if (!post.seen) {
+  if (!isStory && post.title)
+    data.highlight_title = post.title
+  else if (!post.seen)
     post.seen = expires! - 86400
-  }
 
-  // Parse each frame
   for (let num = 0; num < items.length; num++) {
     const item = items[num]!
     const media = parseMediaItem(item, post, cfg, num + 1)
     if (!media)
       continue
-
-    const itemRec = item as unknown as Record<string, unknown>
-    extractTaggedUsers(itemRec, media)
+    extractTaggedUsers(item as unknown as Record<string, unknown>, media)
     data._files.push(media)
   }
 
   return data
 }
 
-/** Single media item */
+/** Parse a single media item (image/video) from a carousel or story. */
 
 function parseMediaItem(
   item: InstagramCarouselItem,
@@ -206,7 +181,6 @@ function parseMediaItem(
   cfg: ParserConfig,
   num: number,
 ): ParsedMedia | null {
-  // Image candidate
   let image: ImageCandidate
   try {
     image = item.image_versions2.candidates[0]!
@@ -217,7 +191,6 @@ function parseMediaItem(
 
   const itemRec = item as unknown as Record<string, unknown>
 
-  // Static video handling
   if (
     !cfg.staticVideo
     && item.original_media_type != null
@@ -234,7 +207,6 @@ function parseMediaItem(
   const widthOrig = item.original_width ?? 0
   const heightOrig = item.original_height ?? 0
 
-  // Video
   let video: VideoVersion | null = null
   let manifest: string | null = null
   let width: number
@@ -242,11 +214,7 @@ function parseMediaItem(
 
   if (item.video_versions?.length) {
     video = item.video_versions.reduce((best, v) =>
-      v.width * v.height * v.type > best.width * best.height * best.type
-        ? v
-        : best,
-    )
-
+      v.width * v.height * v.type > best.width * best.height * best.type ? v : best)
     if (item.video_dash_manifest && cfg.videosDash) {
       manifest = item.video_dash_manifest
       width = widthOrig
@@ -264,14 +232,12 @@ function parseMediaItem(
     height = image.height
   }
 
-  // Build media object
   const media: ParsedMedia = {
     num,
     date: cfg.parseTimestamp(
       (itemRec.taken_at as number)
       ?? (video as unknown as Record<string, number> | null)?.taken_at
-      ?? parent.taken_at
-      ?? null,
+      ?? parent.taken_at ?? null,
     ),
     media_id: item.pk,
     shortcode: item.code ?? shortcodeFromId(item.pk),
@@ -284,28 +250,23 @@ function parseMediaItem(
     tagged_users: [],
   }
 
-  if (manifest != null) {
+  if (manifest != null)
     media._ytdl_manifest_data = manifest
-  }
   if (item.owner)
     media.owner = item.owner
-  if (item.reshared_story_media_author) {
+  if (item.reshared_story_media_author)
     media.author = item.reshared_story_media_author
-  }
-  if (item.expiring_at != null) {
+  if (item.expiring_at != null)
     media.expires = cfg.parseTimestamp(item.expiring_at)
-  }
-  if (item.subscription_media_visibility) {
+  if (item.subscription_media_visibility)
     media.subscription = item.subscription_media_visibility
-  }
-  if (itemRec.audience) {
+  if (itemRec.audience)
     media.audience = itemRec.audience as string
-  }
 
   return media
 }
 
-/** Tagged users */
+/** Extract tagged users from various field formats. */
 
 export function extractTaggedUsers(
   src: Record<string, unknown>,
@@ -313,91 +274,49 @@ export function extractTaggedUsers(
 ): void {
   dest.tagged_users = []
 
-  // edge_media_to_tagged_user (GraphQL style)
   const edges = src.edge_media_to_tagged_user as
-    | { edges: Array<{ node: { user: InstagramUser } }> }
-    | undefined
+    | { edges: Array<{ node: { user: InstagramUser } }> } | undefined
   if (edges?.edges) {
     for (const edge of edges.edges) {
       const u = edge.node.user
-      dest.tagged_users.push({
-        id: u.id ?? u.pk,
-        username: u.username,
-        full_name: u.full_name,
-      })
+      dest.tagged_users.push({ id: u.id ?? u.pk, username: u.username, full_name: u.full_name })
     }
   }
 
-  // usertags.in (REST style)
-  const usertags = src.usertags as
-    | { in?: Array<{ user: InstagramUser }> }
-    | undefined
+  const usertags = src.usertags as { in?: Array<{ user: InstagramUser }> } | undefined
   if (usertags?.in) {
     for (const tag of usertags.in) {
       const u = tag.user
-      dest.tagged_users.push({
-        id: u.pk,
-        username: u.username,
-        full_name: u.full_name,
-      })
+      dest.tagged_users.push({ id: u.pk, username: u.username, full_name: u.full_name })
     }
   }
 
-  // reel_mentions
-  const mentions = src.reel_mentions as
-    | Array<{ user: InstagramUser }>
-    | undefined
+  const mentions = src.reel_mentions as Array<{ user: InstagramUser }> | undefined
   if (mentions) {
     for (const m of mentions) {
       const u = m.user
-      dest.tagged_users.push({
-        id: u.pk ?? u.id ?? '',
-        username: u.username,
-        full_name: u.full_name,
-      })
+      dest.tagged_users.push({ id: u.pk ?? u.id ?? '', username: u.username, full_name: u.full_name })
     }
   }
 
-  // story_bloks_stickers
-  const bloks = src.story_bloks_stickers as
-    | Array<{
-      bloks_sticker: {
-        bloks_sticker_type: string
-        sticker_data: {
-          ig_mention: {
-            account_id: string
-            username: string
-            full_name: string
-          }
-        }
-      }
-    }>
-    | undefined
+  const bloks = src.story_bloks_stickers as Array<{
+    bloks_sticker: { bloks_sticker_type: string, sticker_data: { ig_mention: { account_id: string, username: string, full_name: string } } }
+  }> | undefined
   if (bloks) {
     for (const sticker of bloks) {
       const s = sticker.bloks_sticker
       if (s.bloks_sticker_type === 'mention') {
         const m = s.sticker_data.ig_mention
-        dest.tagged_users.push({
-          id: m.account_id,
-          username: m.username,
-          full_name: m.full_name,
-        })
+        dest.tagged_users.push({ id: m.account_id, username: m.username, full_name: m.full_name })
       }
     }
   }
 
-  // Deduplicate by id
   const seen = new Set<string>()
-  dest.tagged_users = dest.tagged_users.filter((t) => {
-    if (seen.has(t.id))
-      return false
-    seen.add(t.id)
-    return true
-  })
+  dest.tagged_users = dest.tagged_users.filter(t => seen.has(t.id) ? false : (seen.add(t.id), true))
 }
 
-/** Audio / music extraction */
+/** Extract audio/music metadata from a story sticker. */
 
 export function extractAudio(
   src: Record<string, unknown>,
@@ -410,7 +329,6 @@ export function extractAudio(
     return null
 
   const cinfo = sticker.music_consumption_info ?? info
-
   dest.audio_title = info.title
   dest.audio_duration = (info.duration_in_ms ?? 0) / 1000
   dest.audio_timestamps = info.highlight_start_times_in_ms
@@ -442,142 +360,10 @@ export function extractAudio(
   }
 }
 
-/** GraphQL parser */
-
-export function parsePostGraphql(
-  post: Record<string, unknown>,
-  cfg: ParserConfig,
-): ParsedPost {
-  const typename = (post.__typename as string) ?? 'GraphImage'
-
-  const owner = post.owner as InstagramUser
-  const date = cfg.parseTimestamp(post.taken_at_timestamp as number)
-
-  const data: ParsedPost = {
-    typename,
-    likes:
-      (post.edge_media_preview_like as { count: number } | undefined)?.count
-      ?? 0,
-    liked: (post.viewer_has_liked ?? false) as boolean,
-    pinned: (
-      (post.pinned_for_users as Array<{ id: string }> | undefined)?.map(
-        u => Number(u.id),
-      ) ?? []
-    ) as unknown as string[],
-    owner_id: owner.id ?? owner.pk,
-    username: owner.username ?? '',
-    fullname: owner.full_name ?? '',
-    post_id: post.id as string,
-    post_shortcode: post.shortcode as string,
-    post_url: `${cfg.root}/p/${post.shortcode}/`,
-    post_date: date,
-    date,
-    description: '',
-    type: 'post',
-    count: 0,
-    _files: [],
-  }
-
-  // Description
-  const captionEdges = post.edge_media_to_caption as
-    | { edges: Array<{ node: { text: string } }> }
-    | undefined
-  data.description
-    = captionEdges?.edges?.map(e => e.node.text).join('\n') ?? ''
-  data.description = parseUnicodeEscapes(data.description)
-
-  const tags = cfg.findTags(data.description)
-  if (tags.length > 0)
-    data.tags = [...new Set(tags)].sort()
-
-  // Location
-  const location = post.location as InstagramPost['location'] | undefined
-  if (location) {
-    data.location_id = location.pk
-    data.location_slug = location.short_name
-    data.location_url = `${cfg.root}/explore/locations/${location.pk}/${location.short_name}/`
-  }
-
-  // Coauthors
-  const coauthors = post.coauthor_producers as InstagramUser[] | undefined
-  if (coauthors?.length) {
-    data.coauthors = coauthors.map(u => ({
-      id: u.id ?? u.pk,
-      username: u.username,
-    }))
-  }
-
-  // Carousel vs single
-  const sidecar = post.edge_sidecar_to_children as
-    | { edges: Array<{ node: Record<string, unknown> }> }
-    | undefined
-
-  if (sidecar?.edges) {
-    data.sidecar_media_id = data.post_id
-    data.sidecar_shortcode = data.post_shortcode
-
-    let num = 0
-    for (const edge of sidecar.edges) {
-      num++
-      const node = edge.node
-      const dimensions = node.dimensions as {
-        width: number
-        height: number
-      }
-
-      const media: ParsedMedia = {
-        num,
-        date: data.date,
-        media_id: node.id as string,
-        shortcode:
-          (node.shortcode as string) ?? shortcodeFromId(node.id as string),
-        display_url: node.display_url as string,
-        video_url: (node.video_url as string) ?? null,
-        width: dimensions.width,
-        height: dimensions.height,
-        sidecar_media_id: data.post_id,
-        sidecar_shortcode: data.post_shortcode,
-        tagged_users: [],
-        width_original: dimensions.width,
-        height_original: dimensions.height,
-      }
-      extractTaggedUsers(node, media)
-      data._files.push(media)
-    }
-  }
-  else {
-    const dimensions = post.dimensions as { width: number, height: number }
-    const media: ParsedMedia = {
-      num: 1,
-      date: data.date,
-      media_id: post.id as string,
-      shortcode: post.shortcode as string,
-      display_url: post.display_url as string,
-      video_url: (post.video_url as string) ?? null,
-      width: dimensions.width,
-      height: dimensions.height,
-      tagged_users: [],
-      width_original: dimensions.width,
-      height_original: dimensions.height,
-    }
-    extractTaggedUsers(post, media)
-    data._files.push(media)
-  }
-
-  return data
-}
-
 function extractPinned(post: InstagramPost): string[] {
   if (post.timeline_pinned_user_ids)
     return post.timeline_pinned_user_ids
   if (post.clips_tab_pinned_user_ids)
     return post.clips_tab_pinned_user_ids
   return []
-}
-
-function parseUnicodeEscapes(text: string): string {
-  if (!text.includes('\\u'))
-    return text
-  return text.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
-    String.fromCharCode(Number.parseInt(hex, 16)))
 }

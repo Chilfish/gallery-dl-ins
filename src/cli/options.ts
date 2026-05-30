@@ -1,6 +1,6 @@
 /** Shared CLI options, config building, and option decoration. */
 
-import { Command } from 'commander'
+import type { Command } from 'commander'
 import { ConfigManager } from '../config'
 
 export interface GlobalOptions {
@@ -47,18 +47,30 @@ export function buildConfig(opts: GlobalOptions): ConfigManager {
   const config = new ConfigManager()
   const ig: Record<string, unknown> = {}
 
-  if (opts.videos) ig.videos = opts.videos
-  if (opts.previews) ig.previews = opts.previews.split(',')
-  if (opts.audio) ig.audio = true
-  if (opts.maxPosts) ig['max-posts'] = opts.maxPosts
-  if (opts.cursor) ig.cursor = opts.cursor
-  if (opts.orderPosts) ig['order-posts'] = opts.orderPosts
-  if (opts.orderFiles) ig['order-files'] = opts.orderFiles
-  if (opts.staticVideos) ig['static-videos'] = true
-  if (opts.api) ig.api = opts.api
-  if (opts.include) ig.include = opts.include
-  if (opts.split) ig.split = true
+  if (opts.videos)
+    ig.videos = opts.videos
+  if (opts.previews)
+    ig.previews = opts.previews.split(',')
+  if (opts.audio)
+    ig.audio = true
+  if (opts.maxPosts)
+    ig['max-posts'] = opts.maxPosts
+  if (opts.cursor)
+    ig.cursor = opts.cursor
+  if (opts.orderPosts)
+    ig['order-posts'] = opts.orderPosts
+  if (opts.orderFiles)
+    ig['order-files'] = opts.orderFiles
+  if (opts.staticVideos)
+    ig['static-videos'] = true
+  if (opts.api)
+    ig.api = opts.api
+  if (opts.include)
+    ig.include = opts.include
+  if (opts.split)
+    ig.split = true
 
-  if (Object.keys(ig).length > 0) config.set('extractor.instagram', ig)
+  if (Object.keys(ig).length > 0)
+    config.set('extractor.instagram', ig)
   return config
 }

@@ -5,8 +5,8 @@
 
 import type { DirectoryMsg, Metadata, QueueMsg, UrlMsg } from '../types'
 import type { Extractor } from './extractor'
+import { _RESET, _YELLOW, b, c, dim, g, pad } from './format'
 import { Job } from './job'
-import { b, c, dim, g, pad, _YELLOW, _RESET } from './format'
 
 interface FileLine {
   num: number
@@ -30,7 +30,8 @@ export class PrintJob extends Job {
   }
 
   async handleDirectory(msg: DirectoryMsg): Promise<void> {
-    if (this._postCount > 0) this._flushPost()
+    if (this._postCount > 0)
+      this._flushPost()
     this._currentDir = { ...msg.metadata }
     this._postCount++
     this._files = []
@@ -52,13 +53,15 @@ export class PrintJob extends Job {
   }
 
   async handleQueue(msg: QueueMsg): Promise<void> {
-    if (this._files.length > 0 || this._postCount > 0) this._flushPost()
+    if (this._files.length > 0 || this._postCount > 0)
+      this._flushPost()
     this._postCount = 0
     this._files = []
 
     const meta = { ...this._currentDir, ...msg.metadata }
     const extrClass = meta._extractor
-    if (!extrClass || typeof extrClass !== 'object') return
+    if (!extrClass || typeof extrClass !== 'object')
+      return
 
     const cls = extrClass as unknown as {
       pattern: RegExp
@@ -67,7 +70,8 @@ export class PrintJob extends Job {
     }
 
     const match = cls.pattern.exec(msg.url)
-    if (!match) return
+    if (!match)
+      return
 
     const parentExtr = this.extractor
     const childExtr = Reflect.construct(cls, [{
@@ -89,7 +93,8 @@ export class PrintJob extends Job {
 
   private _flushPost(): void {
     const m = this._currentDir
-    if (Object.keys(m).length === 0) return
+    if (Object.keys(m).length === 0)
+      return
 
     const w = this._width
     const labelW = 14
@@ -157,10 +162,12 @@ export class PrintJob extends Job {
     }
 
     const expires = m.expires as string | undefined
-    if (expires) row('Expires:', expires, _YELLOW)
+    if (expires)
+      row('Expires:', expires, _YELLOW)
 
     const hlTitle = m.highlight_title as string | undefined
-    if (hlTitle) row('Highlight:', hlTitle)
+    if (hlTitle)
+      row('Highlight:', hlTitle)
 
     const taggedUser = (m.tagged_username as string) ?? ''
     if (taggedUser) {
@@ -181,11 +188,14 @@ export class PrintJob extends Job {
         const dimStr = f.filename.length > 40 ? `${f.filename.slice(0, 37)}...` : pad(f.filename, dimW)
         const res = f.width ? `${f.width}x${f.height}` : '?x?'
         const badges: string[] = []
-        if (f.videoUrl) badges.push('video')
-        if (f.audioUrl) badges.push('audio')
+        if (f.videoUrl)
+          badges.push('video')
+        if (f.audioUrl)
+          badges.push('audio')
 
         let line = ` ${dim('│')}   ${g(numStr)} ${dimStr}  ${res}`
-        if (badges.length > 0) line += `  ${_YELLOW}(${badges.join('+')})${_RESET}`
+        if (badges.length > 0)
+          line += `  ${_YELLOW}(${badges.join('+')})${_RESET}`
         process.stdout.write(`${line}\n`)
       }
     }
@@ -194,17 +204,20 @@ export class PrintJob extends Job {
   }
 
   private _wrap(text: string, maxLen: number): string[] {
-    if (text.length <= maxLen) return [text]
+    if (text.length <= maxLen)
+      return [text]
     const lines: string[] = []
     let remaining = text
     while (remaining.length > maxLen) {
       let cut = maxLen
       while (cut > 0 && remaining[cut] !== ' ') cut--
-      if (cut === 0) cut = maxLen
+      if (cut === 0)
+        cut = maxLen
       lines.push(remaining.slice(0, cut).trimEnd())
       remaining = remaining.slice(cut).trimStart()
     }
-    if (remaining) lines.push(remaining)
+    if (remaining)
+      lines.push(remaining)
     return lines
   }
 

@@ -40,7 +40,8 @@ export class InstagramStoriesExtractor extends InstagramExtractor {
     opts: InstagramExtractorOptions,
   ): InstagramStoriesExtractor | null {
     const match = InstagramStoriesExtractor.pattern.exec(url)
-    if (!match) return null
+    if (!match)
+      return null
     return new InstagramStoriesExtractor({ ...opts, url, match })
   }
 
@@ -50,7 +51,8 @@ export class InstagramStoriesExtractor extends InstagramExtractor {
       : await this.api.userId((this.groups[1] ?? '').toString())
 
     const reels = await this.api.reelsMedia([reelId])
-    if (!reels.length) return
+    if (!reels.length)
+      return
 
     if (this.mediaId) {
       const reel = reels[0]!

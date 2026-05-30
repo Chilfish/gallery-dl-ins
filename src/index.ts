@@ -19,12 +19,12 @@
 // Config
 export { ConfigManager } from './config'
 
+export { DownloadJob } from './core/download-job'
 // Core
 export { Extractor } from './core/extractor'
 export type { ExtractorOptions, Logger } from './core/extractor'
 export { noopLogger } from './core/extractor'
 export { Job } from './core/job'
-export { DownloadJob } from './core/download-job'
 export { PrintJob } from './core/print-job'
 
 // Sub-extractors (for direct instantiation)

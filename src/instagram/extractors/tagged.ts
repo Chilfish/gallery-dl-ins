@@ -20,7 +20,8 @@ export class InstagramTaggedExtractor extends InstagramExtractor {
     opts: InstagramExtractorOptions,
   ): InstagramTaggedExtractor | null {
     const match = InstagramTaggedExtractor.pattern.exec(url)
-    if (!match) return null
+    if (!match)
+      return null
     return new InstagramTaggedExtractor({ ...opts, url, match })
   }
 
@@ -45,7 +46,8 @@ export class InstagramTaggedExtractor extends InstagramExtractor {
   }
 
   override async* posts(): AsyncGenerator<InstagramPost> {
-    if (!this._taggedUserId) await this.metadata()
+    if (!this._taggedUserId)
+      await this.metadata()
     yield* this.api.userTagged(this._taggedUserId)
   }
 }

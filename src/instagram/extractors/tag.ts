@@ -19,7 +19,8 @@ export class InstagramTagExtractor extends InstagramExtractor {
     opts: InstagramExtractorOptions,
   ): InstagramTagExtractor | null {
     const match = InstagramTagExtractor.pattern.exec(url)
-    if (!match) return null
+    if (!match)
+      return null
     return new InstagramTagExtractor({ ...opts, url, match })
   }
 

@@ -19,7 +19,8 @@ export class InstagramHighlightsExtractor extends InstagramExtractor {
     opts: InstagramExtractorOptions,
   ): InstagramHighlightsExtractor | null {
     const match = InstagramHighlightsExtractor.pattern.exec(url)
-    if (!match) return null
+    if (!match)
+      return null
     return new InstagramHighlightsExtractor({ ...opts, url, match })
   }
 

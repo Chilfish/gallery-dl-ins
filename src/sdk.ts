@@ -14,8 +14,8 @@
 import type { Extractor, Logger } from './core/extractor'
 import type { HttpClient, MessageIter, Storage } from './types'
 import { ConfigManager } from './config'
-import { noopLogger } from './core/extractor'
 import { DownloadJob } from './core/download-job'
+import { noopLogger } from './core/extractor'
 import { createFetchHttpClient } from './fetcher'
 
 import {
