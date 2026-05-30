@@ -14,20 +14,29 @@
   src/cli/index.ts     # CLI — gdl-instagram <command>
 
 核心:
-  src/core/extractor.ts   # 抽象 Extractor 基类（AsyncGenerator 驱动）
-  src/core/job.ts         # Job 调度 + DownloadJob（消息消费 + 文件写入）
+  src/core/extractor.ts      # 抽象 Extractor 基类（AsyncGenerator 驱动）
+  src/core/job.ts            # Job 抽象基类（消息路由）
+  src/core/download-job.ts   # DownloadJob — 文件下载 + 档案去重
+  src/core/print-job.ts      # PrintJob — 终端打印结构化信息
+  src/core/format.ts         # ANSI 格式化 & 字节显示工具
 
 Instagram 模块:
-  src/instagram/base.ts       # InstagramExtractor 基类 + items() 管线
-  src/instagram/api.ts        # REST API 客户端（端点 + 分页 + CSRF）
-  src/instagram/extractors.ts # 11 个子提取器（post/user/stories/…）
-  src/instagram/parsers.ts    # REST / GraphQL → ParsedPost 归一化
-  src/instagram/types.ts      # Instagram 专用类型定义
+  src/instagram/base.ts          # InstagramExtractor 基类 + items() 管线
+  src/instagram/api.ts           # REST API 客户端（端点 + 分页 + CSRF）
+  src/instagram/parsers.ts       # REST / GraphQL → ParsedPost 归一化
+  src/instagram/types.ts         # Instagram 专用类型定义
+  src/instagram/extractors/      # 11 个子提取器（一个文件一个类）
+    helpers.ts                   #   URL 正则工具
+    registry.ts                  #   注册表（解耦 UserExtractor 循环引用）
+    post.ts, user.ts, posts-list.ts, reels-list.ts, tagged.ts,
+    stories.ts, highlights.ts, tag.ts, saved.ts, info.ts, avatar.ts
 
 平台适配:
   src/cli/adapter.ts    # Node.js 实现：HttpClient (cookie/jar) / Logger (console)
   src/cli/cookies.ts    # 内存 Cookie Jar（匿名 session 支持）
   src/cli/storage.ts    # Node.js fs/promises Storage
+  src/cli/options.ts    # 共享 CLI 选项 + 配置构建
+  src/cli/runner.ts     # 提取器解析 + 执行逻辑
 
 HTTP 层:
   src/fetcher.ts        # 平台无关 fetch-based HttpClient（SDK & CLI 共用）

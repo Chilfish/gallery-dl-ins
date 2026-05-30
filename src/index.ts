@@ -23,7 +23,9 @@ export { ConfigManager } from './config'
 export { Extractor } from './core/extractor'
 export type { ExtractorOptions, Logger } from './core/extractor'
 export { noopLogger } from './core/extractor'
-export { DownloadJob, Job, PrintJob } from './core/job'
+export { Job } from './core/job'
+export { DownloadJob } from './core/download-job'
+export { PrintJob } from './core/print-job'
 
 // Sub-extractors (for direct instantiation)
 export {
