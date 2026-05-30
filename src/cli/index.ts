@@ -11,6 +11,7 @@
  */
 
 import { Command } from 'commander'
+import packageJSON from '../../package.json'
 import { ConfigManager } from '../config'
 import { DownloadJob, PrintJob } from '../core/job'
 import {
@@ -274,7 +275,7 @@ program
     + 'Requires a sessionid cookie exported from your browser.\n'
     + 'Set via --sessionid or INSTAGRAM_SESSIONID environment variable.',
   )
-  .version('0.2.0')
+  .version(packageJSON.version)
 
 /** Default command — auto-detect extractor from URL */
 

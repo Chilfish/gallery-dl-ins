@@ -25,8 +25,12 @@ Instagram 模块:
   src/instagram/types.ts      # Instagram 专用类型定义
 
 平台适配:
-  src/cli/adapter.ts    # Node.js 实现：HttpClient (axios) / Storage (fs) / Logger (console)
+  src/cli/adapter.ts    # Node.js 实现：HttpClient (cookie/jar) / Logger (console)
   src/cli/cookies.ts    # 内存 Cookie Jar（匿名 session 支持）
+  src/cli/storage.ts    # Node.js fs/promises Storage
+
+HTTP 层:
+  src/fetcher.ts        # 平台无关 fetch-based HttpClient（SDK & CLI 共用）
 
 共享:
   src/types.ts          # HttpClient / Storage / Message 协议接口
@@ -243,6 +247,6 @@ await job.run()
 - 不要提交 `data/` 或下载文件（已在 `.gitignore`）
 - 不要硬编码 cookie / token 到源码中
 - Instagram API 图片分辨率上限为短边 1080px（CDN URL 带签名，修改参数会 403）
-- `maxRedirects` 设为 20（匹配 Python 版 requests 默认行为），防止过期 sessionid 触发 axios 异常
-- `validateStatus: () => true` — axios 不因非 2xx 状态码抛异常，由 `_call()` 手动检测登录重定向
+- 使用原生 `fetch` — HTTP 4xx/5xx 不抛异常，由调用方手动检测登录重定向
+- Node.js fetch 默认最大 20 次重定向（匹配 Python 版 requests 行为）
 - `src/cli/cookies.ts` 的 Cookie Jar 只在无 sessionid 时使用（匿名模式），效果有限——大多数 API 端点需要登录

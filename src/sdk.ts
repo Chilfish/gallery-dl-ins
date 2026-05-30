@@ -16,6 +16,7 @@ import type { HttpClient, MessageIter, Storage } from './types'
 import { ConfigManager } from './config'
 import { noopLogger } from './core/extractor'
 import { DownloadJob } from './core/job'
+import { createFetchHttpClient } from './fetcher'
 
 import {
   InstagramAvatarExtractor,
@@ -32,8 +33,11 @@ import {
 } from './instagram/extractors'
 
 export interface SDKOptions {
-  /** Custom HttpClient implementation (required). */
-  http: HttpClient
+  /**
+   * Custom HttpClient implementation.
+   * Defaults to a platform-agnostic fetch-based client when omitted.
+   */
+  http?: HttpClient
 
   /**
    * Custom Storage implementation for file output.
@@ -66,12 +70,12 @@ export class InstagramSDK {
   private readonly _csrfToken: string
 
   constructor(opts: {
-    http: HttpClient
+    http?: HttpClient
     storage?: Storage
     log?: Logger
     csrfToken?: string
-  }) {
-    this.http = opts.http
+  } = {}) {
+    this.http = opts.http ?? createFetchHttpClient()
     this.storage = opts.storage ?? undefined!
     this.log = opts.log ?? noopLogger
     this.config = new ConfigManager()

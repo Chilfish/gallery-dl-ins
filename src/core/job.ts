@@ -201,6 +201,7 @@ export class DownloadJob extends Job {
       })
 
       // Convert to Uint8Array for Storage.write
+      // Native fetch returns Node.js Buffer (extends Uint8Array) for arraybuffer
       let data: Uint8Array | string
       if (resp.data instanceof Uint8Array) {
         data = resp.data
@@ -210,15 +211,6 @@ export class DownloadJob extends Job {
       }
       else if (typeof resp.data === 'string') {
         data = resp.data
-      }
-      else if (
-        typeof resp.data === 'object'
-        && resp.data != null
-        && 'type' in resp.data
-        && (resp.data as { type: string }).type === 'Buffer'
-      ) {
-        // Node.js Buffer (Bun's axios returns this for arraybuffer)
-        data = new Uint8Array(resp.data as unknown as ArrayBuffer)
       }
       else {
         data = JSON.stringify(resp.data)

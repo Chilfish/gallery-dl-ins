@@ -8,7 +8,7 @@
  * for await (const msg of ig.extract('https://www.instagram.com/p/ABC123/')) { ... }
  * ```
  *
- * ## Node.js convenience (axios + fs)
+ * ## Node.js convenience (native fetch + fs)
  * ```ts
  * import { createSDK } from '@chilfish/gallery-dl-instagram/node'
  * const ig = await createSDK({ cookies: 'ds_user_id=...; sessionid=...' })
