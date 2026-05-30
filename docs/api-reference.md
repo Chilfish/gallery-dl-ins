@@ -619,7 +619,7 @@ import { createHttpClient, createStorage, createLogger } from '@chilfish/gallery
 ```
 
 ```typescript
-// Node.js HttpClient — axios 封装
+// Node.js HttpClient — native fetch 封装
 function createHttpClient(sessionId?: string): HttpClient
 
 // Node.js Storage — fs/promises 封装

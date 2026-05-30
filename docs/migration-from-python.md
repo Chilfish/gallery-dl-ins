@@ -28,7 +28,7 @@ def items(self):
         yield Message.Url, url, data
 ```
 
-**TypeScript**：`AsyncGenerator` + `axios`（非阻塞 I/O）。
+**TypeScript**：`AsyncGenerator` + native `fetch`（非阻塞 I/O）。
 
 ```typescript
 async* items(): MessageIter {

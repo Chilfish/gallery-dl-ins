@@ -6,45 +6,50 @@
 
 ```
 gallery-dl-ins/
-├── index.ts              # 公共 API 入口（barrel export）
-├── sdk.ts                # 高层 SDK 封装（InstagramSDK）
-├── config.ts             # 嵌套配置读取器
-├── types.ts              # 共享类型：HttpClient、Storage、Message 协议
-├── message.ts            # 消息工厂函数
-├── package.json          # ESM 包，三入口：. / ./sdk / ./cli
-├── tsdown.config.ts      # 构建配置
+├── src/                  # 所有源码
+│   ├── index.ts          # 公共 API 入口（barrel export）
+│   ├── sdk.ts            # 高层 SDK 封装（InstagramSDK）
+│   ├── config.ts         # 嵌套配置读取器
+│   ├── types.ts          # 共享类型：HttpClient、Storage、Message 协议
+│   ├── message.ts        # 消息工厂函数
+│   ├── node-factory.ts   # Node.js 便利工厂 createSDK()
+│   ├── fetcher.ts        # 平台无关 fetch-based HttpClient
+│   │
+│   ├── core/             # 平台无关核心
+│   │   ├── extractor.ts  # 抽象 Extractor 基类
+│   │   ├── job.ts        # Job 抽象基类（消息路由）
+│   │   ├── download-job.ts  # DownloadJob — 文件下载 + 档案去重
+│   │   ├── print-job.ts  # PrintJob — 终端打印结构化信息
+│   │   └── format.ts     # ANSI 格式化 & 字节显示工具
+│   │
+│   ├── instagram/        # Instagram 模块
+│   │   ├── api.ts        # REST API 客户端
+│   │   ├── base.ts       # InstagramExtractor 基类 + items() 管线
+│   │   ├── types.ts      # Instagram 专用类型
+│   │   ├── extractors/   # 11 个子提取器（一个文件一个类）
+│   │   └── parsers/      # REST / GraphQL → ParsedPost
+│   │
+│   ├── cli/              # CLI + adapter（Node.js 绑定）
+│   │   ├── index.ts      # Commander 命令定义
+│   │   ├── adapter.ts    # HttpClient (cookie/jar) / Logger
+│   │   ├── storage.ts    # Node.js fs/promises Storage
+│   │   ├── cookies.ts    # 内存 Cookie Jar
+│   │   ├── options.ts    # 共享 CLI 选项 + 配置构建
+│   │   └── runner.ts     # 提取器解析 + 执行逻辑
+│   │
+│   └── utils/            # 纯函数工具
+│       ├── id-codec.ts   # Instagram ID ↔ shortcode
+│       └── text.ts       # Unicode / HTML / URL 工具
 │
-├── core/                 # 平台无关核心
-│   ├── extractor.ts      # 抽象 Extractor 基类
-│   └── job.ts            # Job 调度 + DownloadJob 实现
-│
-├── instagram/            # Instagram 模块
-│   ├── index.ts          # 模块 barrel
-│   ├── api.ts            # REST API 客户端
-│   ├── base.ts           # InstagramExtractor 基类 + items() 管线
-│   ├── extractors.ts     # 11 个子提取器
-│   ├── parsers.ts        # 帖子解析器 (REST / GraphQL → ParsedPost)
-│   └── types.ts          # Instagram 专用类型
-│
-├── cli/                  # CLI + adapter（Node.js 绑定）
-│   ├── index.ts          # Commander 命令定义
-│   ├── adapter.ts        # HttpClient / Storage / Logger 的 Node 实现
-│   └── cookies.ts        # 内存 Cookie Jar
-│
-├── utils/                # 纯函数工具
-│   ├── id-codec.ts       # Instagram ID ↔ shortcode
-│   └── text.ts           # Unicode / HTML / URL 工具
-│
-└── docs/                 # 文档
-    ├── sdk.md            # SDK 开发者指南
-    ├── gallery-dl.md     # Python 原版架构参考
-    ├── architecture.md   # 本文档
-    ├── api-reference.md  # API 参考
-    ├── cli.md            # CLI 使用指南
-    └── migration-from-python.md  # Python → TS 迁移对照
+├── tests/                # 测试（单元 + 集成）
+├── docs/                 # 文档
+├── examples/             # 使用示例
+├── postmortem/           # 事后分析报告
+├── package.json          # ESM 包
+└── tsdown.config.ts      # 构建配置
 ```
 
-**核心理念**：核心库（`core/` + `instagram/`）完全平台无关——只依赖 `HttpClient` / `Storage` / `Logger` 三个接口。`cli/adapter.ts` 负责把它们绑定到 Node.js（axios / fs / console），浏览器环境只需换一套 adapter。
+**核心理念**：核心库（`core/` + `instagram/`）完全平台无关——只依赖 `HttpClient` / `Storage` / `Logger` 三个接口。`src/fetcher.ts` 提供零依赖的 fetch-based 默认实现，Node.js / 浏览器 / Deno / Edge 通用。CLI adapter 在此之上叠加 Cookie 和 Cookie Jar 支持。
 
 ## 2. 消息驱动的流水线
 
@@ -391,7 +396,7 @@ config.interpolate(['extractor', 'instagram', 'post'], 'videos')
 
 | 方面 | Python gallery-dl | TypeScript 移植版 |
 |------|-------------------|-------------------|
-| 异步模型 | 同步生成器 + requests | AsyncGenerator + axios |
+| 异步模型 | 同步生成器 + requests | AsyncGenerator + native fetch |
 | 配置 | 全局 dict + 多文件加载 | ConfigManager + 层级插值 |
 | Post-processing | 独立 post-processor 链 | 当前未实现（预留 Storage 接口） |
 | Archive | SQLite / 文本文件 | 内存 Map（可替换） |

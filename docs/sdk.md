@@ -56,7 +56,7 @@ SDK 提供三层入口，按需选用：
 ### 创建实例
 
 ```ts
-// Node.js：一行代码（自动创建 axios adapter）
+// Node.js：一行代码（自动创建 fetch adapter）
 import { createSDK } from '@chilfish/gallery-dl-instagram/node'
 
 const ig = await createSDK({
