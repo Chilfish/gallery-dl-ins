@@ -274,7 +274,7 @@ program
     + 'Requires a sessionid cookie exported from your browser.\n'
     + 'Set via --sessionid or INSTAGRAM_SESSIONID environment variable.',
   )
-  .version('0.1.0')
+  .version('0.2.0')
 
 /** Default command — auto-detect extractor from URL */
 

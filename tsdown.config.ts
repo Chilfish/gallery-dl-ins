@@ -28,8 +28,5 @@ export default defineConfig([
     dts: false,
     platform: 'node',
     target: 'es2022',
-    deps: {
-      onlyBundle: ['commander', 'axios'],
-    },
   },
 ])
