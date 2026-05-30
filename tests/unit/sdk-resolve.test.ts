@@ -21,7 +21,7 @@ import {
   InstagramTagExtractor,
   InstagramTaggedExtractor,
   InstagramUserExtractor,
-} from '../../instagram/extractors'
+} from '../../src/instagram/extractors'
 
 /**
  * Replicate SDK's _resolve ordering.

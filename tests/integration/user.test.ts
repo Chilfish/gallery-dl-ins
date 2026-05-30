@@ -1,9 +1,9 @@
-import type { Message, Storage } from '../../types'
+import type { Message, Storage } from '../../src/types'
 import { describe, expect, it } from 'vitest'
-import { ConfigManager } from '../../config'
-import { noopLogger } from '../../core/extractor'
-import { DownloadJob } from '../../core/job'
-import { InstagramUserExtractor } from '../../instagram/extractors'
+import { ConfigManager } from '../../src/config'
+import { noopLogger } from '../../src/core/extractor'
+import { DownloadJob } from '../../src/core/job'
+import { InstagramUserExtractor } from '../../src/instagram/extractors'
 import { MockHttpClient } from '../helpers/mock-http'
 
 const mockStorage: Storage = {

@@ -27,7 +27,7 @@ import {
   InstagramTagExtractor,
   InstagramTaggedExtractor,
   InstagramUserExtractor,
-} from '../../instagram/extractors'
+} from '../../src/instagram/extractors'
 
 /** Helper: simulate the slice(1) applied by Extractor constructor. */
 function groupsAfterSlice(

@@ -1,10 +1,10 @@
 import type {
   InstagramPost,
   ParserConfig,
-} from '../../instagram/types'
+} from '../../src/instagram/types'
 import { describe, expect, it } from 'vitest'
-import { parsePostGraphql, parsePostRest } from '../../instagram/parsers'
-import { findTags } from '../../utils/text'
+import { parsePostGraphql, parsePostRest } from '../../src/instagram/parsers'
+import { findTags } from '../../src/utils/text'
 
 /**
  * Post parser tests — normalize raw API responses into ParsedPost.

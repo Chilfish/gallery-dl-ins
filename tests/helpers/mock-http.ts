@@ -1,4 +1,4 @@
-import type { HttpClient, HttpResponse } from '../../types'
+import type { HttpClient, HttpResponse } from '../../src/types'
 
 interface MockRoute {
   /** URL substring to match (case-insensitive) */

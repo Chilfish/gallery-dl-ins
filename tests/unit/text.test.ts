@@ -14,7 +14,7 @@ import {
   parseUnicodeEscapes,
   unescape,
   unquote,
-} from '../../utils/text'
+} from '../../src/utils/text'
 
 describe('extract', () => {
   it('extracts substring between delimiters', () => {

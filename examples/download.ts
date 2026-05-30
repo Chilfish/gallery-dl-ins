@@ -7,7 +7,7 @@
  * 需要先设置 .env 中的 INSTAGRAM_COOKIES。
  */
 
-import { createSDK } from '../node'
+import { createSDK } from '../src/node'
 
 const COOKIES = process.env.INSTAGRAM_COOKIES
 

@@ -9,8 +9,8 @@
  * 这些接口就是平台无关层的全部契约。
  */
 
-import type { HttpClient, HttpResponse, Storage } from '../types'
-import { InstagramSDK } from '../index'
+import type { HttpClient, HttpResponse, Storage } from '../src/types'
+import { InstagramSDK } from '../src/index'
 
 /** 使用 fetch API 的 HttpClient（浏览器 / Deno 兼容） */
 const fetchHttpClient: HttpClient = {

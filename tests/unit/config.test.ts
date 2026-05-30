@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
  * ConfigManager tests — nested config get/set/interpolate.
  */
 
-import { ConfigManager } from '../../config'
+import { ConfigManager } from '../../src/config'
 
 describe('configManager.get', () => {
   const cfg = new ConfigManager({

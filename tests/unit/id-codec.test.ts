@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
  * into shortcodes found in URLs.  These tests verify both directions.
  */
 
-import { idFromShortcode, shortcodeFromId } from '../../utils/id-codec'
+import { idFromShortcode, shortcodeFromId } from '../../src/utils/id-codec'
 
 describe('idFromShortcode', () => {
   it('decodes known shortcodes to numeric IDs', () => {

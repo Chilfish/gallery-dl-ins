@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
  * Message factory tests — ensure correct shape of DirectoryMsg, UrlMsg, QueueMsg.
  */
 
-import { directory, queue, url } from '../../message'
+import { directory, queue, url } from '../../src/message'
 
 describe('directory', () => {
   it('creates a directory message with empty metadata by default', () => {

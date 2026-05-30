@@ -7,32 +7,32 @@
 
 ```
 入口:
-  index.ts         # barrel export — 全量 API 导出
-  sdk.ts           # 平台无关 SDK — InstagramSDK class
-  node-factory.ts  # Node.js 工厂 — createSDK({cookies})
-  node.ts          # Node.js barrel — 从 node-factory 重导出
-  cli/index.ts     # CLI — gdl-instagram <command>
+  src/index.ts         # barrel export — 全量 API 导出
+  src/sdk.ts           # 平台无关 SDK — InstagramSDK class
+  src/node-factory.ts  # Node.js 工厂 — createSDK({cookies})
+  src/node.ts          # Node.js barrel — 从 node-factory 重导出
+  src/cli/index.ts     # CLI — gdl-instagram <command>
 
 核心:
-  core/extractor.ts   # 抽象 Extractor 基类（AsyncGenerator 驱动）
-  core/job.ts         # Job 调度 + DownloadJob（消息消费 + 文件写入）
+  src/core/extractor.ts   # 抽象 Extractor 基类（AsyncGenerator 驱动）
+  src/core/job.ts         # Job 调度 + DownloadJob（消息消费 + 文件写入）
 
 Instagram 模块:
-  instagram/base.ts       # InstagramExtractor 基类 + items() 管线
-  instagram/api.ts        # REST API 客户端（端点 + 分页 + CSRF）
-  instagram/extractors.ts # 11 个子提取器（post/user/stories/…）
-  instagram/parsers.ts    # REST / GraphQL → ParsedPost 归一化
-  instagram/types.ts      # Instagram 专用类型定义
+  src/instagram/base.ts       # InstagramExtractor 基类 + items() 管线
+  src/instagram/api.ts        # REST API 客户端（端点 + 分页 + CSRF）
+  src/instagram/extractors.ts # 11 个子提取器（post/user/stories/…）
+  src/instagram/parsers.ts    # REST / GraphQL → ParsedPost 归一化
+  src/instagram/types.ts      # Instagram 专用类型定义
 
 平台适配:
-  cli/adapter.ts    # Node.js 实现：HttpClient (axios) / Storage (fs) / Logger (console)
-  cli/cookies.ts    # 内存 Cookie Jar（匿名 session 支持）
+  src/cli/adapter.ts    # Node.js 实现：HttpClient (axios) / Storage (fs) / Logger (console)
+  src/cli/cookies.ts    # 内存 Cookie Jar（匿名 session 支持）
 
 共享:
-  types.ts          # HttpClient / Storage / Message 协议接口
-  config.ts         # ConfigManager — 嵌套配置 + 层级插值
-  message.ts        # Message 工厂：directory() / url() / queue()
-  utils/            # 纯函数工具（ID codec、文本处理）
+  src/types.ts          # HttpClient / Storage / Message 协议接口
+  src/config.ts         # ConfigManager — 嵌套配置 + 层级插值
+  src/message.ts        # Message 工厂：directory() / url() / queue()
+  src/utils/            # 纯函数工具（ID codec、文本处理）
 ```
 
 ## 架构原则
@@ -54,12 +54,12 @@ Job.run() → 消费 Message 流 → handleDirectory / handleUrl / handleQueue
 
 ### 平台无关核心 + Adapter 模式
 
-核心库（`core/` + `instagram/`）只依赖三个接口：
+核心库（`src/core/` + `src/instagram/`）只依赖三个接口：
 - `HttpClient` — HTTP 请求
 - `Storage` — 文件 I/O
 - `Logger` — 日志输出
 
-`cli/adapter.ts` 提供 Node.js 实现。浏览器 / Deno / Edge 换一套 adapter 即可。
+`src/cli/adapter.ts` 提供 Node.js 实现。浏览器 / Deno / Edge 换一套 adapter 即可。
 
 ### CSRF 认证
 
@@ -87,13 +87,13 @@ if (k.toLowerCase() === 'cookie' && mergedHeaders.Cookie) {
 bun install
 
 # 开发运行 CLI（直接跑 TS）
-bun cli/index.ts <url> [options]
+bun src/cli/index.ts <url> [options]
 
 # 示例
-bun cli/index.ts https://www.instagram.com/p/ABC123/ -v --cookies="..."
-bun cli/index.ts https://www.instagram.com/username/ -v --cookies="..."
-bun cli/index.ts tag cats -v --cookies="..."
-bun cli/index.ts saved --cookies="..."
+bun src/cli/index.ts https://www.instagram.com/p/ABC123/ -v --cookies="..."
+bun src/cli/index.ts https://www.instagram.com/username/ -v --cookies="..."
+bun src/cli/index.ts tag cats -v --cookies="..."
+bun src/cli/index.ts saved --cookies="..."
 
 # 类型检查
 bun run typecheck
@@ -245,4 +245,4 @@ await job.run()
 - Instagram API 图片分辨率上限为短边 1080px（CDN URL 带签名，修改参数会 403）
 - `maxRedirects` 设为 20（匹配 Python 版 requests 默认行为），防止过期 sessionid 触发 axios 异常
 - `validateStatus: () => true` — axios 不因非 2xx 状态码抛异常，由 `_call()` 手动检测登录重定向
-- `cli/cookies.ts` 的 Cookie Jar 只在无 sessionid 时使用（匿名模式），效果有限——大多数 API 端点需要登录
+- `src/cli/cookies.ts` 的 Cookie Jar 只在无 sessionid 时使用（匿名模式），效果有限——大多数 API 端点需要登录

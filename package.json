@@ -27,7 +27,7 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.cts",
   "bin": {
-    "gallery-dl-instagram": "./dist/cli/index.cjs"
+    "dl-ins": "./dist/dl-ins.mjs"
   },
   "files": [
     "LICENSE",
@@ -40,7 +40,7 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "cli": "bun cli/index.ts",
+    "cli": "bun src/cli/index.ts",
     "lint": "eslint . --fix",
     "test": "vitest run",
     "test:watch": "vitest",

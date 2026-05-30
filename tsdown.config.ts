@@ -3,12 +3,12 @@ import { defineConfig } from 'tsdown'
 export default defineConfig([
   // ── SDK (platform-agnostic: browser / Deno / Edge / Node.js) ──
   {
-    entry: ['index.ts', 'node.ts'],
+    entry: ['src/index.ts', 'src/node.ts'],
     format: ['esm', 'cjs'],
     dts: true,
     clean: true,
     platform: 'neutral',
-    target: 'es2020',
+    target: 'es2022',
     outExtension({ format }) {
       return {
         dts: format === 'cjs' ? '.d.cts' : '.d.mts',
@@ -23,12 +23,11 @@ export default defineConfig([
 
   // ── CLI (Node.js, self-contained for npx) ──
   {
-    entry: { 'cli/index': 'cli/index.ts' },
-    format: ['cjs'],
+    entry: { 'dl-ins': 'src/cli/index.ts' },
+    format: ['esm'],
     dts: false,
     platform: 'node',
-    target: 'es2020',
-    banner: { js: '#!/usr/bin/env node' },
+    target: 'es2022',
     deps: {
       onlyBundle: ['commander', 'axios'],
     },

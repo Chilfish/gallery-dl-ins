@@ -1,8 +1,8 @@
-import type { HttpClient, Message, Storage } from '../../types'
+import type { HttpClient, Message, Storage } from '../../src/types'
 import { describe, expect, it } from 'vitest'
-import { ConfigManager } from '../../config'
-import { noopLogger } from '../../core/extractor'
-import { InstagramPostExtractor } from '../../instagram/extractors'
+import { ConfigManager } from '../../src/config'
+import { noopLogger } from '../../src/core/extractor'
+import { InstagramPostExtractor } from '../../src/instagram/extractors'
 import { MockHttpClient } from '../helpers/mock-http'
 
 // Minimal no-op storage
