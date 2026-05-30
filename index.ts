@@ -1,63 +1,57 @@
 /**
- * gallery-dl TypeScript port — public API.
- *
- * Usage:
+ * gallery-dl-instagram — platform-agnostic Instagram media extractor SDK.
  *
  * ```ts
- * import { DownloadJob, InstagramPostExtractor, ConfigManager } from './ts/index';
+ * import { createSDK } from '@chilfish/gallery-dl-instagram'
  *
- * const config = new ConfigManager({
- *   extractor: {
- *     instagram: {
- *       videos: false,
- *       'max-posts': 10,
- *     },
- *   },
- * });
+ * const ig = await createSDK({ cookies: 'ds_user_id=...; sessionid=...' })
  *
- * const opts = {
- *   url: 'https://www.instagram.com/p/CxAbCdEfGh/',
- *   match: InstagramPostExtractor.pattern.exec('https://www.instagram.com/p/CxAbCdEfGh/')!,
- *   config,
- *   http,           // your HttpClient implementation
- *   storage,        // your Storage implementation
- *   log: console,   // or custom Logger
- * };
+ * // Extract metadata only
+ * for await (const msg of ig.extract('https://www.instagram.com/p/ABC123/')) {
+ *   if (msg.type === 'url') console.log(msg.url)
+ * }
  *
- * const extractor = new InstagramPostExtractor(opts);
- * const job = new DownloadJob(extractor);
- * const status = await job.run();
+ * // Download to disk
+ * await ig.download('https://www.instagram.com/p/ABC123/', './downloads')
  * ```
  */
 
-import type { Logger } from './core/extractor'
-import type { HttpClient, Storage } from './types'
-import { createHttpClient, createStorage, extractCsrfFromCookies } from './cli/adapter'
+import type { Extractor, Logger } from './core/extractor'
+import type { HttpClient, MessageIter, Storage } from './types'
+import { ConfigManager } from './config'
 import { noopLogger } from './core/extractor'
+import { DownloadJob } from './core/job'
+
+import {
+  InstagramAvatarExtractor,
+  InstagramHighlightsExtractor,
+  InstagramInfoExtractor,
+  InstagramPostExtractor,
+  InstagramPostsExtractor,
+  InstagramReelsExtractor,
+  InstagramSavedExtractor,
+  InstagramStoriesExtractor,
+  InstagramTagExtractor,
+  InstagramTaggedExtractor,
+  InstagramUserExtractor,
+} from './instagram/extractors'
 
 // Config
 export { ConfigManager } from './config'
+
 // Core
 export { Extractor } from './core/extractor'
-export type {
-  ExtractorOptions,
-  Logger,
-} from './core/extractor'
+export type { ExtractorOptions, Logger } from './core/extractor'
 export { noopLogger } from './core/extractor'
-
 export { DownloadJob, Job, PrintJob } from './core/job'
 
 // Instagram
 export * from './instagram/index'
+
 // Message
 export { directory, queue, url } from './message'
-
 export type { MessageIter } from './message'
 
-// SDK (high-level) — platform-agnostic class
-export { InstagramSDK } from './sdk'
-
-export type { ExtractOptions, SDKOptions } from './sdk'
 // Types
 export type {
   Config,
@@ -87,6 +81,145 @@ export {
   unescape,
   unquote,
 } from './utils/text'
+
+// Sub-extractors (for direct instantiation)
+export {
+  InstagramAvatarExtractor,
+  InstagramHighlightsExtractor,
+  InstagramInfoExtractor,
+  InstagramPostExtractor,
+  InstagramPostsExtractor,
+  InstagramReelsExtractor,
+  InstagramSavedExtractor,
+  InstagramStoriesExtractor,
+  InstagramTagExtractor,
+  InstagramTaggedExtractor,
+  InstagramUserExtractor,
+}
+
+export interface SDKOptions {
+  /** Custom HttpClient implementation (required). */
+  http: HttpClient
+
+  /**
+   * Custom Storage implementation for file output.
+   * Only needed if you plan to call ``download()``.
+   */
+  storage?: Storage
+
+  /** Logger instance.  Defaults to a silent no-op logger. */
+  log?: Logger
+
+  /** Pre-extracted CSRF token (optional). */
+  csrfToken?: string
+}
+
+export interface ExtractOptions {
+  /** Max posts to extract (for user/tag feeds). */
+  maxPosts?: number
+  /** Download videos (default: true). */
+  videos?: boolean
+  /** Max posts to extract (for user/tag feeds). */
+  limit?: number
+}
+
+export class InstagramSDK {
+  readonly http: HttpClient
+  readonly storage: Storage
+  readonly log: Logger
+  readonly config: ConfigManager
+
+  private readonly _csrfToken: string
+
+  constructor(opts: {
+    http: HttpClient
+    storage?: Storage
+    log?: Logger
+    csrfToken?: string
+  }) {
+    this.http = opts.http
+    this.storage = opts.storage ?? undefined!
+    this.log = opts.log ?? noopLogger
+    this.config = new ConfigManager()
+    this._csrfToken = opts.csrfToken ?? ''
+  }
+
+  /**
+   * Extract messages from an Instagram URL without downloading.
+   *
+   * Returns an async generator yielding Directory / Url / Queue messages.
+   * Each ``url`` message includes full metadata (post_id, username, dimensions, etc.).
+   */
+  async* extract(url: string): MessageIter {
+    const extractor = this._resolve(url)
+    await extractor.initialize()
+    yield* extractor
+  }
+
+  /**
+   * Download all media from an Instagram URL.
+   *
+   * Uses the built-in DownloadJob + Storage to save files to disk.
+   * Requires ``storage`` to be set in constructor options.
+   *
+   * ```ts
+   * const stats = await ig.download('https://www.instagram.com/p/.../', './my-downloads')
+   * // → { posts: 1, files: 9, bytes: 4500000 }
+   * ```
+   */
+  async download(
+    url: string,
+    outputDir = './data',
+  ): Promise<{ posts: number, files: number, bytes: number }> {
+    const extractor = this._resolve(url)
+    const job = new DownloadJob(extractor as Extractor)
+    job.basePath = outputDir
+
+    await job.run()
+
+    return {
+      posts: (job as unknown as { _postCount: number })._postCount ?? 0,
+      files: (job as unknown as { _fileCount: number })._fileCount ?? 0,
+      bytes: (job as unknown as { _downloadedBytes: number })._downloadedBytes ?? 0,
+    }
+  }
+
+  /** Resolve a URL to an Extractor instance via pattern matching. */
+  private _resolve(url: string): Extractor {
+    for (const Cls of [
+      InstagramPostExtractor,
+      InstagramStoriesExtractor,
+      InstagramHighlightsExtractor,
+      InstagramTagExtractor,
+      InstagramSavedExtractor,
+      InstagramPostsExtractor,
+      InstagramReelsExtractor,
+      InstagramTaggedExtractor,
+      InstagramInfoExtractor,
+      InstagramAvatarExtractor,
+      InstagramUserExtractor,
+    ]) {
+      const match = Cls.pattern.exec(url)
+      if (match) {
+        const inst = Reflect.construct(Cls, [{
+          url,
+          match,
+          config: this.config,
+          http: this.http,
+          storage: this.storage,
+          log: this.log,
+          csrfToken: this._csrfToken,
+        }])
+        return inst as Extractor
+      }
+    }
+
+    throw new Error(
+      `No extractor matched URL: ${url}. `
+      + 'Supported: /p/, /reel/, /{user}/, /stories/, /highlights/, /explore/tags/, /saved/',
+    )
+  }
+}
 
 /** Options for the Node.js convenience factory. */
 export interface CreateSDKOptions {
@@ -133,20 +266,26 @@ export interface CreateSDKOptions {
  * const ig = await createSDK({ http: myHttpClient, storage: myStorage })
  * ```
  */
-export async function createSDK(opts: CreateSDKOptions = {}): Promise<import('./sdk').InstagramSDK> {
-  const { InstagramSDK } = await import('./sdk')
+export async function createSDK(opts: CreateSDKOptions = {}): Promise<InstagramSDK> {
   const log = opts.log ?? noopLogger
-  const storage = opts.storage ?? createStorage()
 
   let http: HttpClient
+  let storage: Storage | undefined = opts.storage
   let csrfToken = ''
 
   if (opts.http) {
     http = opts.http
   }
   else if (opts.cookies) {
+    // Dynamic import — only loads Node.js adapter when createSDK is actually called
+    const { createHttpClient, extractCsrfFromCookies } = await import('./cli/adapter')
     csrfToken = extractCsrfFromCookies(opts.cookies)
     http = createHttpClient(undefined, opts.cookies, log)
+    // Only import fs-based storage if caller didn't provide one (e.g. Vercel serverless)
+    if (!storage) {
+      const { createStorage } = await import('./cli/storage')
+      storage = createStorage()
+    }
   }
   else {
     throw new Error(

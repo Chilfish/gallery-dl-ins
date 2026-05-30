@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallery-dl-instagram — Vite Playground</title>
+</head>
+<body>
+  <h1>gallery-dl-instagram — 浏览器打包验证</h1>
+  <p>打开 DevTools → Network 查看加载的 chunk。对比两个 entry 的 bundle 大小：</p>
+  <ul>
+    <li><code>sdk-only.js</code> — 只引用 <code>InstagramSDK</code>，不应含 Node.js 代码</li>
+    <li><code>with-create-sdk.js</code> — 引用 <code>createSDK</code> + 自定义 storage，应含 axios 但**不含** fs</li>
+  </ul>
+  <script type="module" src="/src/sdk-only.ts"></script>
+  <script type="module" src="/src/with-create-sdk.ts"></script>
+</body>
+</html>

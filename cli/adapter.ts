@@ -7,9 +7,7 @@
 
 import type { AxiosInstance } from 'axios'
 import type { Logger } from '../core/extractor'
-import type { HttpClient, HttpResponse, Storage } from '../types'
-import { access, mkdir, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import type { HttpClient, HttpResponse } from '../types'
 import axios from 'axios'
 import { createCookieJar } from './cookies'
 
@@ -235,32 +233,6 @@ function cleanupParams(
       cleaned[k] = String(v)
   }
   return cleaned
-}
-
-/** NodeStorage — fs/promises wrapper */
-
-export function createStorage(): Storage {
-  return {
-    async exists(path: string): Promise<boolean> {
-      try {
-        await access(path)
-        return true
-      }
-      catch {
-        return false
-      }
-    },
-
-    async write(path: string, data: Uint8Array | string): Promise<void> {
-      // Ensure parent directory
-      await mkdir(dirname(path), { recursive: true })
-      await writeFile(path, data)
-    },
-
-    async mkdir(path: string): Promise<void> {
-      await mkdir(path, { recursive: true })
-    },
-  }
 }
 
 /** NodeLogger — console wrapper */

@@ -62,7 +62,7 @@ const ig = await createSDK({
 })
 
 // 任意平台：手动传入 adapter
-import { InstagramSDK } from '@chilfish/gallery-dl-instagram/sdk'
+import { InstagramSDK } from '@chilfish/gallery-dl-instagram'
 const ig = new InstagramSDK({
   http: myHttpClient,   // 你的 HttpClient 实现（必需）
   storage: myStorage,   // Storage 实现（可选，download() 需要）
@@ -335,7 +335,7 @@ const browserHttp: HttpClient = {
 ## Deno 示例
 
 ```ts
-import { InstagramSDK } from 'npm:@chilfish/gallery-dl-instagram/sdk'
+import { InstagramSDK } from 'npm:@chilfish/gallery-dl-instagram'
 
 // Deno 使用 fetch-based HTTP client + Deno storage
 const ig = new InstagramSDK({

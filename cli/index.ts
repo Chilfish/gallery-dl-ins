@@ -21,7 +21,8 @@ import {
   InstagramTagExtractor,
   InstagramUserExtractor,
 } from '../instagram/extractors'
-import { createHttpClient, createLogger, createStorage, createWebClient, extractCsrfFromCookies } from './adapter'
+import { createHttpClient, createLogger, createWebClient, extractCsrfFromCookies } from './adapter'
+import { createStorage } from './storage'
 
 /** Shared options — applied to all subcommands */
 
