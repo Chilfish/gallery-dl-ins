@@ -9,4 +9,7 @@ export default defineConfig({
   target: 'esnext',
   exports: true,
   nodeProtocol: 'strip',
+  deps: {
+    onlyBundle: false,
+  },
 })

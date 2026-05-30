@@ -56,18 +56,17 @@ SDK 提供三层入口，按需选用：
 ### 创建实例
 
 ```ts
-const ig = await InstagramSDK.create({
-  // 方式 A：传完整 Cookie 字符串（推荐）
+// Node.js：一行代码（自动创建 axios adapter）
+const ig = await createSDK({
   cookies: 'ds_user_id=...; sessionid=...; csrftoken=...; ig_did=...',
+})
 
-  // 方式 B：传自定义 HttpClient
-  // http: myAxiosClient,
-
-  // 可选：自定义 Storage（默认 fs/promises）
-  // storage: myS3Storage,
-
-  // 可选：自定义 Logger（默认静默）
-  // log: console,
+// 任意平台：手动传入 adapter
+import { InstagramSDK } from '@chilfish/gallery-dl-instagram/sdk'
+const ig = new InstagramSDK({
+  http: myHttpClient,   // 你的 HttpClient 实现（必需）
+  storage: myStorage,   // Storage 实现（可选，download() 需要）
+  log: myLogger,        // Logger 实现（可选）
 })
 ```
 
@@ -338,8 +337,14 @@ const browserHttp: HttpClient = {
 ```ts
 import { InstagramSDK } from 'npm:@chilfish/gallery-dl-instagram/sdk'
 
-const ig = await InstagramSDK.create({
-  cookies: Deno.env.get('INSTAGRAM_COOKIES')!,
+// Deno 使用 fetch-based HTTP client + Deno storage
+const ig = new InstagramSDK({
+  http: {
+    request: async ({ url, headers }) => {
+      const resp = await fetch(url, { headers })
+      return { status: resp.status, data: await resp.json(), headers: Object.fromEntries(resp.headers), url: resp.url }
+    },
+  },
 })
 
 for await (const msg of ig.extract('https://www.instagram.com/p/ABC123/')) {

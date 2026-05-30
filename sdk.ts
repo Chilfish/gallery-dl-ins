@@ -1,11 +1,13 @@
 /**
- * High-level SDK entry point — the fastest way to use gallery-dl-ins.
+ * Platform-agnostic Instagram SDK — no Node.js / browser specific code.
  *
  * ```ts
- * import { createSDK } from '@chilfish/gallery-dl-instagram/sdk'
+ * import { InstagramSDK } from '@chilfish/gallery-dl-instagram/sdk'
  *
- * const instagram = createSDK({
- *   cookies: 'ds_user_id=...; sessionid=...; csrftoken=...',
+ * const instagram = new InstagramSDK({
+ *   http: myHttpClient,     // your HttpClient implementation
+ *   storage: myStorage,     // your Storage implementation (optional)
+ *   log: myLogger,          // your Logger implementation (optional)
  * })
  *
  * // Just extract metadata (no download):
@@ -17,19 +19,16 @@
  * await instagram.download('https://www.instagram.com/p/.../', './downloads')
  * ```
  *
- * Or use custom adapters for browser / Deno / Edge:
+ * For the Node.js convenience factory with cookie-based setup, use the
+ * main entry point:
  * ```ts
- * const instagram = createSDK({
- *   http: myHttpClient,     // your HttpClient implementation
- *   storage: myStorage,     // your Storage implementation (optional)
- *   log: myLogger,          // your Logger implementation (optional)
- * })
+ * import { createSDK } from '@chilfish/gallery-dl-instagram'
+ * const ig = await createSDK({ cookies: '...' })
  * ```
  */
 
 import type { Extractor, Logger } from './core/extractor'
 import type { HttpClient, MessageIter, Storage } from './types'
-import { createHttpClient, createStorage, extractCsrfFromCookies } from './cli/adapter'
 import { ConfigManager } from './config'
 import { noopLogger } from './core/extractor'
 import { DownloadJob } from './core/job'
@@ -63,31 +62,20 @@ export {
 }
 
 export interface SDKOptions {
-  /**
-   * Full browser Cookie header string.
-   * Copy from DevTools → Network → Request Headers → Cookie.
-   * Auto-extracts csrftoken for X-CSRFToken header.
-   *
-   * Either ``cookies`` or ``http`` must be provided.
-   */
-  cookies?: string
-
-  /**
-   * Custom HttpClient implementation.
-   * If omitted, a Node.js axios-based client is created from ``cookies``.
-   */
-  http?: HttpClient
+  /** Custom HttpClient implementation (required). */
+  http: HttpClient
 
   /**
    * Custom Storage implementation for file output.
-   * Defaults to Node.js fs/promises-based storage.
+   * Only needed if you plan to call ``download()``.
    */
   storage?: Storage
 
-  /**
-   * Logger instance.  Defaults to a silent no-op logger.
-   */
+  /** Logger instance.  Defaults to a silent no-op logger. */
   log?: Logger
+
+  /** Pre-extracted CSRF token (optional). */
+  csrfToken?: string
 }
 
 export interface ExtractOptions {
@@ -107,52 +95,17 @@ export class InstagramSDK {
 
   private readonly _csrfToken: string
 
-  private constructor(opts: {
+  constructor(opts: {
     http: HttpClient
-    storage: Storage
-    log: Logger
-    config: ConfigManager
-    csrfToken: string
+    storage?: Storage
+    log?: Logger
+    csrfToken?: string
   }) {
     this.http = opts.http
-    this.storage = opts.storage
-    this.log = opts.log
-    this.config = opts.config
-    this._csrfToken = opts.csrfToken
-  }
-
-  /** Factory */
-
-  /**
-   * Create an InstagramSDK instance.
-   *
-   * Provides sensible Node.js defaults when ``cookies`` is given.
-   * Pass ``http`` / ``storage`` / ``log`` for custom platforms.
-   */
-  static async create(opts: SDKOptions = {}): Promise<InstagramSDK> {
-    const log = opts.log ?? noopLogger
-    const storage = opts.storage ?? createStorage()
-
-    let http: HttpClient
-    let csrfToken = ''
-
-    if (opts.http) {
-      http = opts.http
-    }
-    else if (opts.cookies) {
-      csrfToken = extractCsrfFromCookies(opts.cookies)
-      http = createHttpClient(undefined, opts.cookies, log)
-    }
-    else {
-      throw new Error(
-        'Either "cookies" or "http" must be provided. '
-        + 'Get cookies from browser DevTools → Application → Cookies → instagram.com',
-      )
-    }
-
-    const config = new ConfigManager()
-
-    return new InstagramSDK({ http, storage, log, config, csrfToken })
+    this.storage = opts.storage ?? undefined!
+    this.log = opts.log ?? noopLogger
+    this.config = new ConfigManager()
+    this._csrfToken = opts.csrfToken ?? ''
   }
 
   /** High-level API */
@@ -181,6 +134,7 @@ export class InstagramSDK {
    * Download all media from an Instagram URL.
    *
    * Uses the built-in DownloadJob + Storage to save files to disk.
+   * Requires ``storage`` to be set in constructor options.
    *
    * ```ts
    * const stats = await instagram.download(
@@ -246,16 +200,4 @@ export class InstagramSDK {
       + 'Supported: /p/, /reel/, /{user}/, /stories/, /highlights/, /explore/tags/, /saved/',
     )
   }
-}
-
-/**
- * Shorthand: create an SDK instance with Node.js defaults.
- *
- * ```ts
- * import { createSDK } from '@chilfish/gallery-dl-instagram/sdk'
- * const ig = await createSDK({ cookies: '...' })
- * ```
- */
-export function createSDK(opts: SDKOptions): Promise<InstagramSDK> {
-  return InstagramSDK.create(opts)
 }
