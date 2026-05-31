@@ -26,6 +26,7 @@ export interface InstagramUser {
   edge_followed_by?: { count: number }
   edge_media_collections?: { count: number }
   followed_by_viewer?: boolean
+  is_verified?: boolean
 }
 
 export interface ImageCandidate {
@@ -79,12 +80,18 @@ export interface MusicSticker {
 export interface MusicAssetInfo {
   id: string
   title?: string
+  sanitized_title?: string
+  subtitle?: string
   display_artist?: string
   ig_artist?: string
+  ig_username?: string
   duration_in_ms?: number
   highlight_start_times_in_ms?: number[]
   progressive_download_url: string
   cover_artwork_uri?: string
+  cover_artwork_thumbnail_uri?: string
+  has_lyrics?: boolean
+  is_explicit?: boolean
 }
 
 export interface MusicConsumptionInfo {
@@ -93,7 +100,7 @@ export interface MusicConsumptionInfo {
 }
 
 export interface MusicMetadata {
-  music_info?: MusicAssetInfo
+  music_info?: MusicSticker
 }
 
 export interface InstagramPost {
@@ -211,9 +218,14 @@ export interface ParsedMedia {
   audio_url?: string
   audio_user?: string
   audio_title?: string
+  audio_subtitle?: string
   audio_artist?: string
   audio_duration?: number
   audio_timestamps?: number[]
+  audio_cover_artwork_uri?: string
+  audio_cover_artwork_thumbnail_uri?: string
+  audio_has_lyrics?: boolean
+  audio_is_explicit?: boolean
   _ytdl_manifest_data?: string
   sidecar_media_id?: string
   sidecar_shortcode?: string

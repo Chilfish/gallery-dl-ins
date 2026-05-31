@@ -40,6 +40,7 @@ export function parsePostRest(
     owner_id: owner.pk,
     username: owner.username ?? '',
     fullname: owner.full_name ?? '',
+    user: owner,
     post_date: date,
     date,
     description: caption ? caption.text : '',
@@ -103,7 +104,7 @@ export function parsePostRest(
       const audio = extractAudio(
         post as unknown as Record<string, unknown>,
         data as unknown as Record<string, unknown>,
-        { music_asset_info: info },
+        info,
         cfg,
       )
       if (audio) {
@@ -329,11 +330,16 @@ export function extractAudio(
     return null
 
   const cinfo = sticker.music_consumption_info ?? info
-  dest.audio_title = info.title
+  dest.audio_title = info.title ?? info.sanitized_title
+  dest.audio_subtitle = info.subtitle
   dest.audio_duration = (info.duration_in_ms ?? 0) / 1000
   dest.audio_timestamps = info.highlight_start_times_in_ms
   dest.audio_artist = info.display_artist ?? cinfo.display_artist
   dest.audio_user = info.ig_artist ?? cinfo.ig_artist
+  dest.audio_has_lyrics = info.has_lyrics
+  dest.audio_is_explicit = info.is_explicit
+  dest.audio_cover_artwork_uri = info.cover_artwork_uri
+  dest.audio_cover_artwork_thumbnail_uri = info.cover_artwork_thumbnail_uri
 
   const url = info.progressive_download_url
   if (!url)
@@ -353,10 +359,15 @@ export function extractAudio(
     height_original: 0,
     tagged_users: [],
     audio_user: (info.ig_artist ?? cinfo.ig_artist) as string,
-    audio_title: info.title,
+    audio_title: (info.title ?? info.sanitized_title) as string,
+    audio_subtitle: info.subtitle,
     audio_artist: (info.display_artist ?? cinfo.display_artist) as string,
     audio_duration: (info.duration_in_ms ?? 0) / 1000,
     audio_timestamps: info.highlight_start_times_in_ms,
+    audio_cover_artwork_uri: info.cover_artwork_uri,
+    audio_cover_artwork_thumbnail_uri: info.cover_artwork_thumbnail_uri,
+    audio_has_lyrics: info.has_lyrics,
+    audio_is_explicit: info.is_explicit,
   }
 }
 

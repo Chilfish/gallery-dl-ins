@@ -25,6 +25,7 @@ export function parsePostGraphql(
     owner_id: owner.id ?? owner.pk,
     username: owner.username ?? '',
     fullname: owner.full_name ?? '',
+    user: owner,
     post_id: post.id as string,
     post_shortcode: post.shortcode as string,
     post_url: `${cfg.root}/p/${post.shortcode}/`,

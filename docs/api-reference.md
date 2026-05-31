@@ -552,8 +552,10 @@ interface ParsedMedia {
   width: number; width_original: number
   height: number; height_original: number
   tagged_users: TaggedUser[]
-  audio_url?: string; audio_title?: string; audio_artist?: string
-  audio_duration?: number; audio_timestamps?: number[]
+  audio_url?: string; audio_title?: string; audio_subtitle?: string
+  audio_artist?: string; audio_duration?: number; audio_timestamps?: number[]
+  audio_cover_artwork_uri?: string; audio_cover_artwork_thumbnail_uri?: string
+  audio_has_lyrics?: boolean; audio_is_explicit?: boolean
   _ytdl_manifest_data?: string
   // + owner, author, expires, audience, sidecar refs…
 }

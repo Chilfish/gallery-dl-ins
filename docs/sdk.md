@@ -257,9 +257,16 @@ interface ParsedMedia {
   height: number
   width_original: number    // 原图宽（Instagram 可能缩过）
   height_original: number   // 原图高
-  audio_url?: string        // 独立音频（reels 音乐）
+  audio_url?: string                    // 独立音频（reels/帖子音乐）
   audio_title?: string
+  audio_subtitle?: string
   audio_artist?: string
+  audio_duration?: number               // 单位：秒
+  audio_timestamps?: number[]           // 高潮点时间（ms）
+  audio_cover_artwork_uri?: string      // 专辑封面（大图）
+  audio_cover_artwork_thumbnail_uri?: string
+  audio_has_lyrics?: boolean
+  audio_is_explicit?: boolean
   tagged_users: TaggedUser[]
 }
 ```

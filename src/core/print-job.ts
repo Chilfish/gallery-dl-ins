@@ -15,6 +15,12 @@ interface FileLine {
   height: number
   videoUrl: string | null
   audioUrl: string | null
+  audioTitle?: string
+  audioArtist?: string
+  audioDuration?: number
+  audioHasLyrics?: boolean
+  audioIsExplicit?: boolean
+  coverArtworkUri?: string
 }
 
 export class PrintJob extends Job {
@@ -49,6 +55,12 @@ export class PrintJob extends Job {
       height: (meta.height as number) ?? 0,
       videoUrl: (meta.video_url as string) ?? null,
       audioUrl: (meta.audio_url as string) ?? null,
+      audioTitle: (meta.audio_title as string) ?? undefined,
+      audioArtist: (meta.audio_artist as string) ?? undefined,
+      audioDuration: (meta.audio_duration as number) ?? undefined,
+      audioHasLyrics: (meta.audio_has_lyrics as boolean) ?? undefined,
+      audioIsExplicit: (meta.audio_is_explicit as boolean) ?? undefined,
+      coverArtworkUri: (meta.audio_cover_artwork_uri as string) ?? (meta.audio_cover_artwork_thumbnail_uri as string) ?? undefined,
     })
   }
 
@@ -197,6 +209,32 @@ export class PrintJob extends Job {
         if (badges.length > 0)
           line += `  ${_YELLOW}(${badges.join('+')})${_RESET}`
         process.stdout.write(`${line}\n`)
+      }
+    }
+
+    const audioFiles = this._files.filter(f => f.audioUrl)
+    if (audioFiles.length > 0) {
+      process.stdout.write(` ${dim('│')}\n`)
+      process.stdout.write(` ${dim('│')} ${b('Music:')}\n`)
+      for (const af of audioFiles) {
+        if (af.audioTitle) {
+          const title = af.audioArtist ? `${af.audioTitle} — ${af.audioArtist}` : af.audioTitle
+          process.stdout.write(` ${dim('│')}   ${g('♪')} ${title}\n`)
+        }
+        if (af.audioDuration) {
+          const mins = Math.floor(af.audioDuration / 60)
+          const secs = Math.round(af.audioDuration % 60)
+          const dur = `${mins}:${String(secs).padStart(2, '0')}`
+          const badges: string[] = [dur]
+          if (af.audioHasLyrics)
+            badges.push('lyrics')
+          if (af.audioIsExplicit)
+            badges.push(`${_YELLOW}explicit${_RESET}`)
+          process.stdout.write(` ${dim('│')}   ${dim(badges.join(' · '))}\n`)
+        }
+        if (af.coverArtworkUri) {
+          process.stdout.write(` ${dim('│')}   ${dim('Art:')} ${dim(`${af.coverArtworkUri.slice(0, 60)}…`)}\n`)
+        }
       }
     }
 
