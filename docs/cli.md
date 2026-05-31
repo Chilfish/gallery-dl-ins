@@ -46,7 +46,8 @@ gdl-instagram user https://www.instagram.com/user/
 | `-o, --output <dir>` | `./gallery-dl` | 输出目录 |
 | `--videos <mode>` | `true` | 视频下载模式：`true` / `false` |
 | `--previews <types>` | — | 仅下载预览：`video` / `audio` |
-| `--audio` | `false` | 下载独立音频轨道 |
+| `-i, --info` | `false` | 打印结构化帖子信息到终端（不下载） |
+| `--audio` | `false` | 下载独立音频轨道（含音乐元数据） |
 | `--max-posts <n>` | 无限制 | 最大帖子数 |
 | `--cursor <cursor>` | — | 断点续传游标 |
 | `--order-posts <order>` | — | 帖子排序：`asc` / `desc` / `id` / `id_asc` / `id_desc` |
@@ -83,6 +84,21 @@ gdl-instagram post https://www.instagram.com/p/CxAbCdEfGh/ --videos=false
 ```
 
 **输出目录**：`./gallery-dl/instagram/{username}/`
+
+配合 `-i --audio` 打印帖子结构化信息（含音乐元数据）：
+
+```bash
+gdl-instagram post https://www.instagram.com/p/DY_RzaiD4_u/ -i --audio
+```
+
+`--info` 模式下，含有音乐元数据（封面、歌词、显式标签等）的帖子或 Reels 会显示 `Music:` 区块：
+
+```
+ │ Music:
+ │   ♪ weekend citron — =LOVE
+ │   4:02 · lyrics
+ │   Art: https://scontent-.../cover-artwork.jpg
+```
 
 ---
 
