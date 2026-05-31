@@ -40,6 +40,7 @@ export function parsePostRest(
     owner_id: owner.pk,
     username: owner.username ?? '',
     fullname: owner.full_name ?? '',
+    user: owner,
     post_date: date,
     date,
     description: caption ? caption.text : '',

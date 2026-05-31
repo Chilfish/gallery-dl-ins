@@ -26,6 +26,7 @@ export interface InstagramUser {
   edge_followed_by?: { count: number }
   edge_media_collections?: { count: number }
   followed_by_viewer?: boolean
+  is_verified?: boolean
 }
 
 export interface ImageCandidate {
