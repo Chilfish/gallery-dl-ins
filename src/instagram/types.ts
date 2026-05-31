@@ -94,7 +94,7 @@ export interface MusicConsumptionInfo {
 }
 
 export interface MusicMetadata {
-  music_info?: MusicAssetInfo
+  music_info?: MusicSticker
 }
 
 export interface InstagramPost {

@@ -104,7 +104,7 @@ export function parsePostRest(
       const audio = extractAudio(
         post as unknown as Record<string, unknown>,
         data as unknown as Record<string, unknown>,
-        { music_asset_info: info },
+        info,
         cfg,
       )
       if (audio) {
