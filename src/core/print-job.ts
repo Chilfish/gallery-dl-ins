@@ -82,7 +82,7 @@ export class PrintJob extends Job {
 
     const meta = { ...this._currentDir, ...msg.metadata }
     const extrClass = meta._extractor
-    if (!extrClass || typeof extrClass !== 'object')
+    if (!extrClass || typeof extrClass !== 'function')
       return
 
     const cls = extrClass as unknown as {
@@ -91,7 +91,10 @@ export class PrintJob extends Job {
       new (opts: Record<string, unknown>): Extractor
     }
 
+    // URLs from user extractor dispatch may have trailing slashes that
+    // the sub-extractor pattern doesn't expect (e.g. /info/ vs /info).
     const match = cls.pattern.exec(msg.url)
+      ?? cls.pattern.exec(msg.url.replace(/\/$/, ''))
     if (!match)
       return
 
@@ -151,6 +154,45 @@ export class PrintJob extends Job {
     row('URL:', postUrl)
 
     const desc = (m.description as string) ?? ''
+
+    // Profile info (from /info/ sub-extractor)
+    const isPrivate = m.is_private as boolean | undefined
+    const isVerified = m.is_verified as boolean | undefined
+    const followerCount = m.follower_count as number | undefined
+    const followingCount = m.following_count as number | undefined
+    const mediaCount = m.media_count as number | undefined
+    const bio = (m.biography as string) ?? ''
+    const externalUrl = m.external_url as string | undefined
+
+    if (isPrivate !== undefined || isVerified !== undefined || followerCount !== undefined) {
+      const badges: string[] = []
+      if (isPrivate)
+        badges.push('🔒 Private')
+      if (isVerified)
+        badges.push('✅ Verified')
+      if (followerCount !== undefined)
+        badges.push(`${followerCount.toLocaleString()} followers`)
+      if (followingCount !== undefined)
+        badges.push(`${followingCount.toLocaleString()} following`)
+      if (mediaCount !== undefined)
+        badges.push(`${mediaCount.toLocaleString()} posts`)
+      row('Profile:', badges.join(' · '))
+    }
+
+    if (bio) {
+      process.stdout.write(` ${dim('│')}\n`)
+      process.stdout.write(` ${dim('│')} ${b('Bio:')}\n`)
+      for (const line of bio.split('\n')) {
+        for (const wl of this._wrap(line, w - 8)) {
+          process.stdout.write(` ${dim('│')}   ${dim(wl)}\n`)
+        }
+      }
+    }
+
+    if (externalUrl) {
+      row('Website:', externalUrl)
+    }
+
     if (desc) {
       process.stdout.write(` ${dim('│')}\n`)
       process.stdout.write(` ${dim('│')} ${b('Description:')}\n`)

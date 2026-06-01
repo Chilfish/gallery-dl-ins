@@ -102,17 +102,21 @@ gdl-instagram post https://www.instagram.com/p/DY_RzaiD4_u/ -i --audio
 
 ---
 
-### `user` — 用户全部内容
+### `user` — 用户全部内容 / 资料查看
 
 ```bash
+gdl-instagram <url> [options]
 gdl-instagram user <url> [options]
 ```
 
-默认只下载 posts。通过 `--include` 添加更多类型。
+默认只下载 posts。`-i` 只显示 profile 信息不下帖子。
 
 **示例**：
 
 ```bash
+# 查看用户 profile（followers、bio、网站等），不下帖子
+gdl-instagram https://www.instagram.com/username/ -i
+
 # 只下载帖子
 gdl-instagram user https://www.instagram.com/username/
 
@@ -217,33 +221,19 @@ gdl-instagram saved --sessionid=abc123 --max-posts=100
 
 ---
 
-### `info` — 用户资料
+### `info` / `avatar` — 用户资料和头像
+
+通过 `--include` 在 user 命令中使用：
 
 ```bash
-gdl-instagram info <url>
-```
+# 只下载用户资料 JSON（不下帖子）
+gdl-instagram user https://www.instagram.com/username/ --include info
 
-**示例**：
+# 下载 HD 头像
+gdl-instagram user https://www.instagram.com/username/ --include avatar
 
-```bash
-gdl-instagram info https://www.instagram.com/username/
-```
-
-输出 JSON 格式的用户元数据（不下载文件）。
-
----
-
-### `avatar` — 头像下载
-
-```bash
-gdl-instagram avatar <url> [options]
-```
-
-**示例**：
-
-```bash
-gdl-instagram avatar https://www.instagram.com/username/
-gdl-instagram avatar https://www.instagram.com/username/ -o ./avatars
+# 查看 profile 信息（followers、bio 等），不下文件
+gdl-instagram https://www.instagram.com/username/ -i
 ```
 
 下载最高可用的头像分辨率（HD）。

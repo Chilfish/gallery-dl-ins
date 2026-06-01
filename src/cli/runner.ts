@@ -44,6 +44,18 @@ export async function runExtractor(
   extrClass: ExtrLike,
   opts: GlobalOptions,
 ): Promise<void> {
+  // When --info is used on a user URL, always include profile info
+  // (username, fullname, bio, follower count, etc.) even if the user
+  // has no posts.
+  if (opts.info && extrClass === InstagramUserExtractor) {
+    // --info on a user URL defaults to showing profile info only.
+    // User can override with --include posts,reels,... to pull feeds.
+    const parts = (opts.include ?? 'info').split(',').map(s => s.trim())
+    if (!parts.includes('info'))
+      parts.push('info')
+    opts.include = parts.join(',')
+  }
+
   const config = buildConfig(opts)
   const log = createLogger(opts.verbose ?? false)
   let http: ReturnType<typeof createHttpClient>

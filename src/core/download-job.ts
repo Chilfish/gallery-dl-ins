@@ -121,7 +121,7 @@ export class DownloadJob extends Job {
   async handleQueue(msg: QueueMsg): Promise<void> {
     const meta = { ...this._currentDir, ...msg.metadata }
     const extrClass = meta._extractor
-    if (!extrClass || typeof extrClass !== 'object')
+    if (!extrClass || typeof extrClass !== 'function')
       return
 
     const cls = extrClass as unknown as {
@@ -130,7 +130,10 @@ export class DownloadJob extends Job {
       new (opts: Record<string, unknown>): Extractor
     }
 
+    // URLs from user extractor dispatch may have trailing slashes that
+    // the sub-extractor pattern doesn't expect (e.g. /info/ vs /info).
     const match = cls.pattern.exec(msg.url)
+      ?? cls.pattern.exec(msg.url.replace(/\/$/, ''))
     if (!match)
       return
 
