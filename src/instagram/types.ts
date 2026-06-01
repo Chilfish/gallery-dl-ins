@@ -75,6 +75,38 @@ export interface BloksSticker {
 export interface MusicSticker {
   music_asset_info?: MusicAssetInfo
   music_consumption_info?: MusicConsumptionInfo
+  /** Text attribution (e.g. "Sticker by 前島亜美"). */
+  attribution?: string
+  /** Display type (e.g. "music_hidden", "music_with_lyrics"). */
+  display_type?: string
+  /** Placement on story canvas (0-1 fractional). */
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  rotation?: number
+  start_time_ms?: number
+  end_time_ms?: number
+}
+
+/** A link sticker on a story (swipe-up / CTA link). */
+export interface StoryLink {
+  display_url: string
+  link_title: string
+  link_type: string
+  url: string
+}
+
+export interface StoryLinkSticker {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number
+  start_time_ms: number
+  end_time_ms: number
+  story_link: StoryLink
 }
 
 export interface MusicAssetInfo {
@@ -88,10 +120,82 @@ export interface MusicAssetInfo {
   duration_in_ms?: number
   highlight_start_times_in_ms?: number[]
   progressive_download_url: string
+  /** Lower-bitrate alternative download URL. */
+  fast_start_progressive_download_url?: string
   cover_artwork_uri?: string
   cover_artwork_thumbnail_uri?: string
   has_lyrics?: boolean
   is_explicit?: boolean
+  /** Profile picture placeholder for the artist. */
+  placeholder_profile_pic_url?: string
+  /** Audio asset ID (differs from ``id`` which is the track ID). */
+  audio_asset_id?: string
+  /** Where in the track the playback starts (ms). */
+  audio_asset_start_time_in_ms?: number
+  /** How long the music overlaps with the video. */
+  overlap_duration_in_ms?: number
+  /** Music cluster ID for trending / recommendations. */
+  audio_cluster_id?: string
+  /** Artist ID in Instagram's music catalog. */
+  artist_id?: string
+  /** Whether the track is trending in Reels. */
+  is_trending_in_clips?: boolean
+  /** Whether the user has bookmarked this track. */
+  is_bookmarked?: boolean
+  /** Licensing subtype (e.g. "DEFAULT"). */
+  licensed_music_subtype?: string
+  /** Whether media creation with this music is allowed. */
+  allow_media_creation_with_music?: boolean
+  /** Whether saving/downloading the audio is allowed. */
+  allows_saving?: boolean
+  /** Audio muting configuration. */
+  audio_muting_info?: {
+    mute_audio: boolean
+    mute_reason_str: string
+    allow_audio_editing: boolean
+    show_muted_audio_toast: boolean
+  }
+  /** Whether audio should be muted and why. */
+  should_mute_audio?: boolean
+  should_mute_audio_reason?: string
+  should_mute_audio_reason_type?: string | null
+  /** Whether to render the soundwave visual. */
+  should_render_soundwave?: boolean
+  /** Reactive/streaming audio download URL (may be null). */
+  reactive_audio_download_url?: string | null
+  /** 30-second web preview download URL. */
+  web_30s_preview_download_url?: string | null
+  /** Monetization info for the song. */
+  song_monetization_info?: unknown
+  /** Trend rank info (current and previous). */
+  trend_rank?: unknown
+  previous_trend_rank?: unknown
+  /** Display labels for the track. */
+  display_labels?: unknown
+  /** Related derived content. */
+  derived_content_id?: string | null
+  derived_content_start_time_in_composition_in_ms?: number | null
+  /** Number of clips that use this music. */
+  formatted_clips_media_count?: unknown
+  /** Eligibility for vinyl sticker / audio effects. */
+  is_eligible_for_audio_effects?: unknown
+  is_eligible_for_vinyl_sticker?: boolean
+  /** Audio filter configurations. */
+  audio_filter_infos?: unknown[]
+  /** Lyrics data (if available). */
+  lyrics?: unknown
+  /** Spotify track metadata (if linked). */
+  spotify_track_metadata?: unknown
+  /** User notes on the track. */
+  user_notes?: unknown
+  /** Related audio recommendations. */
+  related_audios?: unknown
+  /** Dark mode message override. */
+  dark_message?: unknown
+  /** DASH manifest for audio. */
+  dash_manifest?: unknown
+  /** Music creation restriction reason. */
+  music_creation_restriction_reason?: unknown
 }
 
 export interface MusicConsumptionInfo {
@@ -127,7 +231,9 @@ export interface InstagramPost {
   reel_mentions?: ReelMention[]
   story_bloks_stickers?: BloksSticker[]
   story_music_stickers?: MusicSticker[]
+  story_link_stickers?: StoryLinkSticker[]
   music_metadata?: MusicMetadata
+  highlights_info?: { added_to: Array<{ reel_id: string, title: string }> }
   expiring_at?: number
   seen?: number
   items?: InstagramCarouselItem[]
@@ -157,12 +263,11 @@ export interface InstagramCarouselItem {
   subscription_media_visibility?: string
   audience?: string
   story_music_stickers?: MusicSticker[]
+  story_link_stickers?: StoryLinkSticker[]
   usertags?: { in: UserTag[] }
   reel_mentions?: ReelMention[]
   story_bloks_stickers?: BloksSticker[]
 }
-
-/** Parsed post (normalized output) */
 
 export interface ParsedPost {
   post_id: string
@@ -229,6 +334,15 @@ export interface ParsedMedia {
   _ytdl_manifest_data?: string
   sidecar_media_id?: string
   sidecar_shortcode?: string
+  /** Story link sticker data. */
+  story_link_url?: string
+  story_link_display?: string
+  story_link_title?: string
+  story_link_type?: string
+  /** Music sticker attribution (e.g. "Sticker by 前島亜美"). */
+  music_attribution?: string
+  /** Music sticker display type (e.g. "music_hidden"). */
+  music_display_type?: string
 }
 
 export interface Coauthor {

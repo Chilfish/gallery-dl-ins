@@ -182,7 +182,16 @@ export abstract class InstagramExtractor extends Extractor {
           if (previewsAud) {
             combined.media_id = `${combined.media_id as string}p`
           }
-          else {
+
+          // Always yield the cover art so BGM metadata (title, artist, etc.)
+          // is visible in --info even without --audio. Only skip if this
+          // is a pure audio file with no cover art to show.
+          if (!audio && !previewsAud) {
+            const coverUrl = file.display_url
+            if (coverUrl) {
+              nameExtFromURL(coverUrl, combined)
+              yield url(coverUrl, combined as unknown as Metadata)
+            }
             continue
           }
         }

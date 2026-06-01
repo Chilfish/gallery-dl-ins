@@ -21,6 +21,11 @@ interface FileLine {
   audioHasLyrics?: boolean
   audioIsExplicit?: boolean
   coverArtworkUri?: string
+  storyLinkUrl?: string
+  storyLinkDisplay?: string
+  storyLinkTitle?: string
+  storyLinkType?: string
+  musicAttribution?: string
 }
 
 export class PrintJob extends Job {
@@ -61,6 +66,11 @@ export class PrintJob extends Job {
       audioHasLyrics: (meta.audio_has_lyrics as boolean) ?? undefined,
       audioIsExplicit: (meta.audio_is_explicit as boolean) ?? undefined,
       coverArtworkUri: (meta.audio_cover_artwork_uri as string) ?? (meta.audio_cover_artwork_thumbnail_uri as string) ?? undefined,
+      storyLinkUrl: (meta.story_link_url as string) ?? undefined,
+      storyLinkDisplay: (meta.story_link_display as string) ?? undefined,
+      storyLinkTitle: (meta.story_link_title as string) ?? undefined,
+      storyLinkType: (meta.story_link_type as string) ?? undefined,
+      musicAttribution: (meta.music_attribution as string) ?? undefined,
     })
   }
 
@@ -212,6 +222,24 @@ export class PrintJob extends Job {
       }
     }
 
+    // Story link stickers
+    const linkFiles = this._files.filter(f => f.storyLinkUrl)
+    if (linkFiles.length > 0) {
+      process.stdout.write(` ${dim('│')}\n`)
+      process.stdout.write(` ${dim('│')} ${b('Link:')}\n`)
+      for (const lf of linkFiles) {
+        if (lf.storyLinkDisplay) {
+          process.stdout.write(` ${dim('│')}   ${g('🔗')} ${lf.storyLinkDisplay}\n`)
+        }
+        if (lf.storyLinkTitle && lf.storyLinkTitle !== 'Visit Link') {
+          process.stdout.write(` ${dim('│')}   ${dim('Title:')} ${lf.storyLinkTitle}\n`)
+        }
+        if (lf.storyLinkType) {
+          process.stdout.write(` ${dim('│')}   ${dim('Type:')} ${lf.storyLinkType}\n`)
+        }
+      }
+    }
+
     const audioFiles = this._files.filter(f => f.audioUrl)
     if (audioFiles.length > 0) {
       process.stdout.write(` ${dim('│')}\n`)
@@ -220,6 +248,9 @@ export class PrintJob extends Job {
         if (af.audioTitle) {
           const title = af.audioArtist ? `${af.audioTitle} — ${af.audioArtist}` : af.audioTitle
           process.stdout.write(` ${dim('│')}   ${g('♪')} ${title}\n`)
+        }
+        if (af.musicAttribution) {
+          process.stdout.write(` ${dim('│')}   ${dim('via:')} ${af.musicAttribution}\n`)
         }
         if (af.audioDuration) {
           const mins = Math.floor(af.audioDuration / 60)

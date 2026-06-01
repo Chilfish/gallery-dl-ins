@@ -557,6 +557,10 @@ interface ParsedMedia {
   audio_cover_artwork_uri?: string; audio_cover_artwork_thumbnail_uri?: string
   audio_has_lyrics?: boolean; audio_is_explicit?: boolean
   _ytdl_manifest_data?: string
+  // story 特化字段
+  music_attribution?: string; music_display_type?: string
+  story_link_url?: string; story_link_display?: string
+  story_link_title?: string; story_link_type?: string
   // + owner, author, expires, audience, sidecar refs…
 }
 

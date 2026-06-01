@@ -12,6 +12,7 @@ import type {
   ParsedMedia,
   ParsedPost,
   ParserConfig,
+  StoryLinkSticker,
   VideoVersion,
 } from '../types'
 import { shortcodeFromId } from '../../utils/id-codec'
@@ -167,8 +168,53 @@ function parseStoryRest(post: InstagramPost, cfg: ParserConfig): ParsedPost {
     const media = parseMediaItem(item, post, cfg, num + 1)
     if (!media)
       continue
-    extractTaggedUsers(item as unknown as Record<string, unknown>, media)
+    const itemRec = item as unknown as Record<string, unknown>
+    extractTaggedUsers(itemRec, media)
+
+    // Extract music stickers (BGM)
+    const musicStickers = itemRec.story_music_stickers as MusicSticker[] | undefined
+    if (musicStickers?.[0]) {
+      const audio = extractAudio(itemRec, data as unknown as Record<string, unknown>, musicStickers[0], cfg)
+      if (audio) {
+        audio.num = num + 1
+        // Carry over sticker-level metadata
+        if (musicStickers[0].attribution)
+          audio.music_attribution = musicStickers[0].attribution
+        if (musicStickers[0].display_type)
+          audio.music_display_type = musicStickers[0].display_type
+        data._files.push(audio)
+      }
+    }
+
+    // Extract link stickers (swipe-up / CTA links)
+    const linkStickers = itemRec.story_link_stickers as StoryLinkSticker[] | undefined
+    if (linkStickers?.[0]) {
+      const sl = linkStickers[0].story_link
+      media.story_link_url = sl.url
+      media.story_link_display = sl.display_url
+      media.story_link_title = sl.link_title
+      media.story_link_type = sl.link_type
+    }
+
     data._files.push(media)
+  }
+
+  // Post-level music_metadata (if present; for stories with embedded music)
+  if (post.music_metadata) {
+    const info = post.music_metadata.music_info
+    if (info) {
+      const postRec = post as unknown as Record<string, unknown>
+      const audio = extractAudio(
+        postRec,
+        data as unknown as Record<string, unknown>,
+        info,
+        cfg,
+      )
+      if (audio) {
+        audio.num = items.length
+        data._files.push(audio)
+      }
+    }
   }
 
   return data

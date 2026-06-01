@@ -257,16 +257,25 @@ interface ParsedMedia {
   height: number
   width_original: number    // 原图宽（Instagram 可能缩过）
   height_original: number   // 原图高
-  audio_url?: string                    // 独立音频（reels/帖子音乐）
-  audio_title?: string
+  // ── 音频/BGM（story music sticker · reels 音乐 · 帖子 BGM）──
+  audio_url?: string                    // 独立音频（可下载）
+  audio_title?: string                  // 曲名
   audio_subtitle?: string
-  audio_artist?: string
+  audio_artist?: string                 // 艺人
   audio_duration?: number               // 单位：秒
   audio_timestamps?: number[]           // 高潮点时间（ms）
   audio_cover_artwork_uri?: string      // 专辑封面（大图）
   audio_cover_artwork_thumbnail_uri?: string
   audio_has_lyrics?: boolean
   audio_is_explicit?: boolean
+  music_attribution?: string            // 音乐来源标注（如 "Sticker by xxx"）
+  music_display_type?: string           // 展示类型（"music_hidden" 等）
+  // ── Story 链接贴纸 ──
+  story_link_url?: string               // 跳转链接（完整 URL）
+  story_link_display?: string           // 可读链接（如 "tbsradio.jp/articles/108907/"）
+  story_link_title?: string             // 链接标题（如 "Visit Link"）
+  story_link_type?: string              // 链接类型（"web" 等）
+  // ── 其他 ──
   tagged_users: TaggedUser[]
 }
 ```
