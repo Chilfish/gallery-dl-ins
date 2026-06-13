@@ -1,6 +1,10 @@
 /**
- * 读取 export-user-posts 产出的 IGPostData JSON，并发下载所有媒体到本地，
+ * 读取 export-user / export-user-posts 产出的 JSON，并发下载所有媒体到本地，
  * 并将原 JSON 中的媒体链接替换为 CDN 格式。
+ *
+ * 兼容两种输入格式：
+ *   - 旧格式: IGPost[]（纯帖子数组）
+ *   - 新格式: { user: {...}, posts: IGPost[] }
  *
  * CDN 格式:
  *   https://s3.chilfish.top/instagram/${username}/${postId}-{idx}.${ext}
@@ -10,7 +14,7 @@
  *
  * 产出:
  *   {outdir}/instagram/{username}/DZXRbpLBbu6-1.jpg ...
- *   {input}.cdn.json — 替换后的 JSON
+ *   {input}.cdn.json — 替换后的 JSON（格式与输入一致）
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -32,7 +36,7 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
 
 const inputPath = args[0]!
 const concIdx = args.indexOf('--concurrency')
-const concurrency = concIdx >= 0 ? Number.parseInt(args[concIdx + 1]!, 10) : 5
+const concurrency = concIdx >= 0 ? Number.parseInt(args[concIdx + 1]!, 10) : 16
 const outIdx = args.indexOf('--outdir')
 const outRoot = outIdx >= 0 ? args[outIdx + 1]! : 'data'
 
@@ -67,6 +71,16 @@ interface IGPost {
   [k: string]: unknown
 }
 
+/** 新格式: export-user 产出 */
+interface ExportResult {
+  user: {
+    userName: string
+    profileImage?: string
+    [k: string]: unknown
+  }
+  posts: IGPost[]
+}
+
 interface DownloadTask {
   postIdx: number
   mediaIdx: number
@@ -86,13 +100,36 @@ async function main() {
     process.exit(1)
   }
   const raw = readFileSync(inputPath, 'utf-8')
-  const posts: IGPost[] = JSON.parse(raw) as IGPost[]
+  const parsed: unknown = JSON.parse(raw)
+
+  // 兼容两种格式
+  let posts: IGPost[]
+  let user: ExportResult['user'] | undefined
+  const isNewFormat = (
+    typeof parsed === 'object'
+    && parsed !== null
+    && !Array.isArray(parsed)
+    && 'posts' in parsed
+  )
+
+  if (isNewFormat) {
+    const data = parsed as ExportResult
+    posts = data.posts
+    user = data.user
+  }
+  else if (Array.isArray(parsed)) {
+    posts = parsed as IGPost[]
+  }
+  else {
+    console.error('❌ 无法识别的 JSON 格式（需要 IGPost[] 或 { user, posts }）')
+    process.exit(1)
+  }
   console.log(`📄 读取: ${posts.length} 个帖子`)
 
-  // 需要取 username — 从第一个帖子拿
-  const username = posts[0]?.username
+  // username 优先级：新格式 user.userName > 第一个帖子的 username
+  const username = user?.userName ?? posts[0]?.username
   if (!username) {
-    console.error('❌ JSON 中没有帖子数据')
+    console.error('❌ JSON 中没有用户数据')
     process.exit(1)
   }
 
@@ -118,16 +155,18 @@ async function main() {
     }
   }
 
-  // 头像 — 取第一个有 avatar_url 的帖子，只下载一份
+  // 头像 — 优先用 user.profileImage（HD），否则从帖子取
   let avatarCdnUrl: string | undefined
-  const firstAv = posts.find(p => p.avatar_url)
-  if (firstAv?.avatar_url) {
-    const avExt = extractExt(firstAv.avatar_url)
+  const avatarSrc = user?.profileImage
+    ?? posts.find(p => p.avatar_url)?.avatar_url
+
+  if (avatarSrc) {
+    const avExt = extractExt(avatarSrc)
     const avFilename = `${username}.${avExt}`
     const avLocalPath = join(baseDir, avFilename)
     avatarCdnUrl = `https://s3.chilfish.top/instagram/${username}.${avExt}`
     // 插入队首优先下载
-    tasks.unshift({ postIdx: -1, mediaIdx: -1, srcUrl: firstAv.avatar_url, ext: avExt, localPath: avLocalPath, cdnUrl: avatarCdnUrl })
+    tasks.unshift({ postIdx: -1, mediaIdx: -1, srcUrl: avatarSrc, ext: avExt, localPath: avLocalPath, cdnUrl: avatarCdnUrl })
   }
 
   const totalFiles = tasks.length
@@ -214,7 +253,15 @@ async function main() {
 
   // 5. 输出替换后的 JSON
   const cdnJsonPath = inputPath.replace(/\.json$/, '.cdn.json')
-  writeFileSync(cdnJsonPath, JSON.stringify(posts, null, 2))
+
+  if (isNewFormat && user) {
+    // 新格式：保留 user + posts
+    user.profileImage = avatarCdnUrl ?? user.profileImage ?? ''
+    writeFileSync(cdnJsonPath, JSON.stringify({ user, posts }, null, 2))
+  }
+  else {
+    writeFileSync(cdnJsonPath, JSON.stringify(posts, null, 2))
+  }
   const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 
   console.log(`\n✅ 完成: ${done} 下载, ${failed} 失败, ${formatBytes(downloadedBytes)}, 耗时 ${elapsed}s`)
