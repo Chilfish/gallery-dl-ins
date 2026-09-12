@@ -56,12 +56,12 @@ export class InstagramStoriesExtractor extends InstagramExtractor {
 
     if (this.mediaId) {
       const reel = reels[0]!
-      for (const item of reel.items ?? []) {
-        if (item.pk === this.mediaId) {
-          reel.items = [item]
-          break
-        }
+      const item = (reel.items ?? []).find(i => i.pk === this.mediaId)
+      if (!item) {
+        this.log.warn(`Story ${this.mediaId} not found in reel — it may have expired`)
+        return
       }
+      reel.items = [item]
       yield reel
       return
     }

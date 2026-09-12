@@ -119,9 +119,11 @@ describe('instagramStoriesExtractor integration', () => {
       .add('/web/search/topsearch/', { users: [] })
       .add('/api/v1/feed/reels_media/', storyWithMultipleItems)
 
-    const match = InstagramStoriesExtractor.pattern.exec(url)!
+    const mediaUrl
+      = 'https://www.instagram.com/stories/rin_.t710/3906328154789100102/'
+    const match = InstagramStoriesExtractor.pattern.exec(mediaUrl)!
     const extractor = new InstagramStoriesExtractor({
-      url,
+      url: mediaUrl,
       match,
       config: new ConfigManager(),
       http,
@@ -135,8 +137,43 @@ describe('instagramStoriesExtractor integration', () => {
       messages.push(msg)
     }
 
-    // Should only have 1 directory (only the matched media_id, not both)
+    // Only the matched item should survive — not both
     const directories = messages.filter(m => m.type === 'directory')
     expect(directories.length).toBe(1)
+
+    const urls = messages.filter(m => m.type === 'url')
+    expect(urls.length).toBe(1)
+    if (urls[0] && urls[0].type === 'url') {
+      expect(urls[0].metadata.media_id).toBe('3906328154789100102')
+    }
+  })
+
+  it('yields nothing when the requested media_id is missing (expired story)', async () => {
+    const http = new MockHttpClient()
+      .add('/api/v1/users/web_profile_info/', mockUserData)
+      .add('/web/search/topsearch/', { users: [] })
+      .add('/api/v1/feed/reels_media/', mockStoryData)
+
+    const staleUrl
+      = 'https://www.instagram.com/stories/rin_.t710/9999999999999999999/'
+    const match = InstagramStoriesExtractor.pattern.exec(staleUrl)!
+    const extractor = new InstagramStoriesExtractor({
+      url: staleUrl,
+      match,
+      config: new ConfigManager(),
+      http,
+      storage: mockStorage,
+      log: noopLogger,
+    })
+
+    await extractor.initialize()
+    const messages: Message[] = []
+    for await (const msg of extractor) {
+      messages.push(msg)
+    }
+
+    // Must NOT fall back to the whole reel when the id doesn't match
+    expect(messages.filter(m => m.type === 'directory').length).toBe(0)
+    expect(messages.filter(m => m.type === 'url').length).toBe(0)
   })
 })
