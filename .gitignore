@@ -20,3 +20,4 @@ coverage/
 
 cookies.txt
 data/
+.commandcode/settings.json
