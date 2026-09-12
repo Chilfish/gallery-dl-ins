@@ -16,7 +16,7 @@ import type {
   Metadata,
   QueueMsg,
 } from '../src/types'
-import { readFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createFetchHttpClient, extractCsrf } from '../src/fetcher'
 import { InstagramRestAPI } from '../src/instagram/api'
@@ -410,7 +410,8 @@ async function main(): Promise<void> {
   const json = JSON.stringify(result, null, 2)
   const outPath = `data/${username}.json`
 
-  await Bun.write(outPath, json)
+  mkdirSync('data', { recursive: true })
+  writeFileSync(outPath, json)
   console.log(`\n📄 输出: ${outPath} (${(json.length / 1024).toFixed(1)} KB)`)
 }
 
