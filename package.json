@@ -14,17 +14,17 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
+      "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
     "./node": {
-      "import": "./dist/node.mjs",
+      "import": "./dist/node.js",
       "require": "./dist/node.cjs"
     },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.cts",
   "bin": {
     "dl-ins": "./dist/dl-ins.mjs"
@@ -52,17 +52,14 @@
   "peerDependenciesMeta": {},
   "dependencies": {},
   "devDependencies": {
-    "@antfu/eslint-config": "^9.0.0",
-    "@types/node": "^25.9.1",
-    "commander": "^15.0.0",
-    "dotenv": "^17.4.2",
-    "eslint": "^10.4.1",
-    "lefthook": "^2.1.9",
-    "tsdown": "^0.22.1",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.7"
-  },
-  "inlinedDependencies": {
-    "commander": "15.0.0"
+    "@antfu/eslint-config": "^10.0.0",
+    "@types/node": "^26.6.6",
+    "commander": "^15.1.0",
+    "dotenv": "^18.0.10",
+    "eslint": "^10.15.0",
+    "lefthook": "^2.2.2",
+    "tsdown": "^0.23.7",
+    "typescript": "6.0.3",
+    "vitest": "^5.1.0"
   }
 }

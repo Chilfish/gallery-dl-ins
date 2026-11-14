@@ -8,4 +8,5 @@
 - Prefers failing explicitly (warn + return nothing) over silent fallbacks that return broader/unintended data when a requested identifier can't be matched. Confidence: 0.5
 - Expects work to be finished with a git commit ("fix then commit all"), not left uncommitted in the working tree. Confidence: 0.6
 - Prefers changes committed as several atomic, logically-scoped commits following the project's commit convention/skill, rather than one lump commit. Confidence: 0.5
+- Prefers project docs organized as a categorized `docs/` tree (guide / reference / engineering / postmortem / archive) with a central `docs/README.md` index, modeled on other projects' docs structure, rather than a flat pile of topic files. Confidence: 0.5
 - Prefers standard Node APIs (e.g. `node:fs` `writeFileSync`/`mkdirSync`) over runtime-specific ones like `Bun.write`, keeping scripts consistent with the project's declared engines (node >= 18) and keeping typecheck clean. Confidence: 0.5
