@@ -1,6 +1,7 @@
 import type { InstagramExtractorOptions } from '../base'
 import type { InstagramPost } from '../types'
 import { InstagramExtractor } from '../base'
+import { extractReelsMediaFromPage } from '../html-payload'
 import { register } from './registry'
 
 export class InstagramStoriesExtractor extends InstagramExtractor {
@@ -45,12 +46,94 @@ export class InstagramStoriesExtractor extends InstagramExtractor {
     return new InstagramStoriesExtractor({ ...opts, url, match })
   }
 
-  override async* posts(): AsyncGenerator<InstagramPost> {
-    const reelId = this.highlightId
-      ? this.highlightId
-      : await this.api.userId((this.groups[1] ?? '').toString())
+  /**
+   * The stories page embeds the full reel payload (``reels_media``) in its
+   * server-rendered JSON. This survives REST ``reels_media`` outages and needs
+   * no user-id resolution, so try it before the API path.
+   *
+   * Returns ``null`` when the page has no usable payload so the caller can
+   * fall back to the REST endpoint.
+   */
+  private async _storyFromPage(): Promise<InstagramPost[] | null> {
+    const username = this.groups[1]
+    if (!username)
+      return null
 
-    const reels = await this.api.reelsMedia([reelId])
+    try {
+      const resp = await this.request(
+        `${this.root}/stories/${encodeURIComponent(username)}/`,
+        {
+          responseType: 'text',
+          // Without document-navigation headers Instagram serves a JS shell
+          // with no embedded reel payload.
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
+          },
+        },
+      )
+      if (resp.status < 200 || resp.status >= 300) {
+        this.log.debug(`stories page returned status ${resp.status} — falling back to reels_media`)
+        return null
+      }
+
+      const html = typeof resp.data === 'string'
+        ? resp.data
+        : ''
+      const reels = extractReelsMediaFromPage(html)
+      if (!reels) {
+        this.log.debug('stories page had no embedded reel payload — falling back to reels_media')
+        return null
+      }
+
+      for (const reel of reels) {
+        if (!reel.user) {
+          reel.user = {
+            pk: String(reel.id ?? reel.pk ?? ''),
+            username,
+            full_name: '',
+          }
+        }
+        // The page payload omits reel-level expiring_at; without it the
+        // parser classifies the reel as a highlight instead of a story.
+        if (reel.expiring_at == null) {
+          const latest = (reel.items ?? []).reduce(
+            (max, item) => Math.max(max, item.expiring_at ?? 0),
+            0,
+          )
+          if (latest > 0)
+            reel.expiring_at = latest
+        }
+      }
+      return reels
+    }
+    catch (err) {
+      this.log.debug(
+        `stories page payload unavailable (${err instanceof Error
+          ? err.message
+          : String(err)}) — falling back to reels_media`,
+      )
+      return null
+    }
+  }
+
+  override async* posts(): AsyncGenerator<InstagramPost> {
+    let reels: InstagramPost[] | null = this.highlightId
+      ? null
+      : await this._storyFromPage()
+
+    if (!reels) {
+      const reelId = this.highlightId
+        ? this.highlightId
+        : await this.api.userId((this.groups[1] ?? '').toString())
+      reels = await this.api.reelsMedia([reelId])
+    }
+
     if (!reels.length)
       return
 
