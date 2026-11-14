@@ -85,7 +85,7 @@ const audio = extractAudio(
 - `ParsedMedia` 补全：`audio_subtitle`、`audio_cover_artwork_uri`、`audio_cover_artwork_thumbnail_uri`、`audio_has_lyrics`、`audio_is_explicit`
 - `extractAudio` 填充上述字段
 - `PrintJob` 添加 `Music:` 区块（在 `--info` 模式下显示歌曲、艺人、时长、歌词标签、专辑封面 URL）
-- 文档更新：`docs/sdk.md`、`docs/api-reference.md`、`docs/cli.md`
+- 文档更新：`docs/guide/sdk.md`、`docs/reference/api-reference.md`、`docs/guide/cli.md`
 
 ## 防范措施
 
