@@ -78,10 +78,28 @@ describe('instagramUserExtractor integration', () => {
     const http = new MockHttpClient()
     // Mock endpoints that child extractors call during initialization
     http.add('/api/v1/feed/user/', { items: [], num_results: 0, more_available: false })
-    http.add('/web/search/topsearch/', { users: [] })
+    http.add('/web/search/topsearch/', {
+      users: [
+        {
+          user: {
+            pk: '123',
+            id: '123',
+            username: 'watase_yuzuki',
+            full_name: 'Watase Yuzuki',
+            is_private: false,
+          },
+        },
+      ],
+    })
     http.add('/api/v1/users/web_profile_info/', {
       data: {
-        user: { pk: '123', id: '123', username: 'watase_yuzuki', full_name: 'Watase Yuzuki', is_private: false },
+        user: {
+          pk: '123',
+          id: '123',
+          username: 'watase_yuzuki',
+          full_name: 'Watase Yuzuki',
+          is_private: false,
+        },
       },
     })
 
