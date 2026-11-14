@@ -9,7 +9,7 @@
 - **AsyncGenerator 管线** — 提取器产出 `Message` 流（directory / url / queue），由 Job 消费
 - **11 个子提取器** — post / reel / user / stories / highlights / tagged / saved / tag / avatar / info / posts
 - **CSRF 认证** — 自动从 Cookie 提取 csrftoken，同时作为 Cookie 和 X-CSRFToken header 发送
-- **CLI 工具** — 8 个子命令，支持 Cookie 字符串或 sessionid 登录
+- **CLI 工具** — `dl-ins` 命令，按 URL 自动路由，支持完整 Cookie 头或 sessionid 登录
 - **类型安全** — TypeScript strict mode，完整的类型导出
 
 ## 快速开始
@@ -54,20 +54,21 @@ const ig = new InstagramSDK({
 ### CLI
 
 ```bash
+# 全局安装后使用 bin 名 `dl-ins`（或 npx -p @chilfish/gallery-dl-instagram dl-ins ...）
 # 下载单个帖子
-npx gallery-dl-instagram https://www.instagram.com/p/ABC123/ --cookies="..."
+dl-ins https://www.instagram.com/p/ABC123/ --cookies="..."
 
 # 下载用户全部帖子
-npx gallery-dl-instagram https://www.instagram.com/username/ --cookies="..."
+dl-ins https://www.instagram.com/username/ --cookies="..."
 
 # 按标签搜索
-npx gallery-dl-instagram tag cats --cookies="..."
+dl-ins tag cats --cookies="..."
 
 # 下载收藏
-npx gallery-dl-instagram saved --cookies="..."
+dl-ins saved --cookies="..."
 
 # 仅输出元数据（不下载）
-npx gallery-dl-instagram https://www.instagram.com/p/ABC123/ --cookies="..." --info
+dl-ins https://www.instagram.com/p/ABC123/ --cookies="..." --info
 ```
 
 ## 示例
@@ -100,13 +101,15 @@ bun examples/custom-adapter.ts
 2. F12 → Application → Cookies → instagram.com
 3. 复制完整 Cookie 字符串，或至少包含 `sessionid` + `csrftoken`
 
-## API 文档
+## 文档
 
-- [架构文档](docs/architecture.md) — 流水线 / 生命周期 / 消息协议 / 配置系统
-- [SDK 指南](docs/sdk.md) — 快速开始 / 三层 API / 浏览器 & Deno 适配
-- [API 参考](docs/api-reference.md) — 全量 API 参考（类 / 方法 / 类型签名）
-- [CLI 指南](docs/cli.md) — CLI 使用指南（8 个子命令 + 选项）
-- [迁移对照](docs/migration-from-python.md) — Python → TS 差异 / 功能矩阵
+完整索引见 [docs/README.md](docs/README.md)。
+
+- [SDK 指南](docs/guide/sdk.md) — 快速开始 / 三层 API / 浏览器 & Deno 适配
+- [CLI 指南](docs/guide/cli.md) — 命令、生效选项、输出结构与排障
+- [架构](docs/engineering/architecture.md) — 流水线 / 生命周期 / 消息协议 / 配置系统
+- [API 参考](docs/reference/api-reference.md) — 全量导出面
+- [Python 对照](docs/reference/python-parity.md) — 与原版 gallery-dl 的差异与功能矩阵
 
 ## 开发
 
