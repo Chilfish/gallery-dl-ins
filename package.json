@@ -1,7 +1,7 @@
 {
   "name": "@chilfish/gallery-dl-instagram",
   "type": "module",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Instagram extraction pipeline — platform-agnostic SDK + CLI",
   "license": "GPL-2.0-only",
   "keywords": [
@@ -42,6 +42,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "cli": "bun src/cli/index.ts",
     "lint": "eslint . --fix",
+    "lint:check": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
