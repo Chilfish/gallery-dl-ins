@@ -64,8 +64,11 @@ pre-push 钩子（`lefthook.yml`）会自动跑 `bun run build`。pre-commit 对
 
 ## 发布前检查
 
+> 发布流程与完整清单见 [git-workflow.md](./git-workflow.md#发布流程) 与 [release-checklist.md](./release-checklist.md)。本仓库通过 tag 触发的 `.github/workflows/publish.yml` 使用 npm Trusted Publisher（OIDC）发布，本地 `npm publish` 只用于排障。
+
 - [ ] `dist/dl-ins.mjs` 顶部没有 `import ... from '<第三方包>'`（只能有 `node:*`）
 - [ ] `dist/index.js` / `dist/node.js` 不包含 `node:` 实现代码（应是外部 import）
 - [ ] `node dist/dl-ins.mjs --help` 可正常执行
+- [ ] `CHANGELOG.md` 有与 `package.json` 版本一致的版本节
 - [ ] `package.json` 的 `version` 与 npm 上不一致（避免重复发布）
 - [ ] CLI `--version` 读自 `package.json`，无需手工改

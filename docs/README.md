@@ -44,6 +44,8 @@ TypeScript 移植版 Instagram 媒体提取器：平台无关核心（只依赖 
 | [code-style.md](engineering/code-style.md) | 注释规范、TypeScript 约定、项目惯例、禁止事项 | 写代码前 |
 | [testing.md](engineering/testing.md) | 单元 / 集成测试分层、`MockHttpClient`、Cookie 与 `.env` | 新增测试、排查测试失败 |
 | [build-and-release.md](engineering/build-and-release.md) | tsdown 双构建、产物形状、exports/bin 约束、发包检查 | 改构建配置、发布前 |
+| [git-workflow.md](engineering/git-workflow.md) | Commit / PR / 发布规范、验证门禁、OIDC 发布凭据 | 提交、开 PR、发版前 |
+| [release-checklist.md](engineering/release-checklist.md) | 版本纪律、发布前门禁、真实环境冒烟、发布步骤与核验 | 每次里程碑发布 |
 
 ## postmortem/ — 事后分析
 
@@ -56,6 +58,7 @@ TypeScript 移植版 Instagram 媒体提取器：平台无关核心（只依赖 
 | [003](postmortem/003-binary-download-csrf.md) | 二进制下载损坏 & CSRF Cookie 不匹配 |
 | [004](postmortem/004-queue-dispatch-missing-deps.md) | Queue 分发时子提取器缺少父依赖 |
 | [005](postmortem/005-music-metadata-nesting-mismatch.md) | `MusicMetadata` 类型与真实 API 响应不匹配 |
+| [006](postmortem/006-stories-user-resolution.md) | stories `User not found` 与 REST `reels_media` 失效 |
 
 ## archive/ — 存档
 

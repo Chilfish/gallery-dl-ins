@@ -13,6 +13,7 @@
 | 代码规范 | [docs/engineering/code-style.md](docs/engineering/code-style.md) |
 | 测试分层与 mock | [docs/engineering/testing.md](docs/engineering/testing.md) |
 | 构建与产物契约 | [docs/engineering/build-and-release.md](docs/engineering/build-and-release.md) |
+| Git 流程与发布 | [docs/engineering/git-workflow.md](docs/engineering/git-workflow.md) · [release-checklist](docs/engineering/release-checklist.md) |
 | SDK / CLI 用法 | [docs/guide/sdk.md](docs/guide/sdk.md) · [docs/guide/cli.md](docs/guide/cli.md) |
 
 ## 命令
@@ -22,6 +23,7 @@ bun install
 bun run cli <url> [options]   # 直接跑 TS 版 CLI
 bun run typecheck             # tsc --noEmit
 bun run lint                  # eslint --fix
+bun run lint:check            # eslint（CI / 提交前）
 bun run test                  # vitest run（默认离线）
 bun run test:unit             # 仅单元
 bun run build                 # tsdown（SDK + CLI 双构建）
