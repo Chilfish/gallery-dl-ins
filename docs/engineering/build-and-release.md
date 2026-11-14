@@ -45,7 +45,7 @@ deps: { onlyBundle: ['commander'] },  // 白名单：只有 commander 打进产�
   "main":   "./dist/index.cjs",
   "module": "./dist/index.js",
   "types":  "./dist/index.d.cts",
-  "bin":    { "dl-ins": "./dist/dl-ins.mjs" }
+  "bin":    { "dl-ins": "dist/dl-ins.mjs" }
 }
 ```
 

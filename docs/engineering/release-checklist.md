@@ -29,7 +29,7 @@
 ## 包身份核验
 
 - [ ] `package.json#name` = `@chilfish/gallery-dl-instagram`
-- [ ] `package.json#bin` = `{ "dl-ins": "./dist/dl-ins.mjs" }`
+- [ ] `package.json#bin` = `{ "dl-ins": "dist/dl-ins.mjs" }`（npm 11 会把带 `./` 前缀的 bin 判为无效并移除）
 - [ ] `package.json#exports` 只有 `.` 与 `./node`
 - [ ] `files` 只包含 `LICENSE` / `README.md` / `dist`
 - [ ] `bun pm pack --dry-run` 产物不含 `data/`、`.env`、测试与源文件
