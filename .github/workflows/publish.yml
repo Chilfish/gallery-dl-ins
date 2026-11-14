@@ -1,0 +1,61 @@
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  # Required for npm Trusted Publisher (OIDC token exchange).
+  id-token: write
+  contents: read
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # Do not set registry-url: it writes a placeholder token .npmrc,
+          # while authentication is exchanged through OIDC.
+
+      - name: Upgrade npm for Trusted Publisher
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          echo "tag=$tag package=$pkg"
+          test "$tag" = "$pkg"
+
+      - name: Verify CHANGELOG entry
+        run: |
+          pkg="$(node -p "require('./package.json').version")"
+          grep -q "^## $pkg" CHANGELOG.md
+
+      - run: bun run typecheck
+      - run: bun run lint:check
+      - run: bun run test
+      - run: bun run build
+
+      - name: Verify CLI artifact
+        run: node dist/dl-ins.mjs --help > /dev/null
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
