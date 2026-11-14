@@ -13,6 +13,7 @@
 | [003](003-binary-download-csrf.md) | 二进制损坏 & CSRF Cookie 不匹配 | 协议细节遗漏 | 二进制必须 `responseType: 'arraybuffer'`；CSRF 要同时进 Cookie 与 header |
 | [004](004-queue-dispatch-missing-deps.md) | Queue 分发时子提取器缺少父依赖 | 依赖注入 / 静默失败 | 子 Job 必须继承父的 config/http/storage/log；静默错误必须上报 |
 | [005](005-music-metadata-nesting-mismatch.md) | `MusicMetadata` 类型与真实响应不匹配 | 类型假设 ≠ 真实数据 | `music_info` 是 `MusicSticker` 容器；不要凭直觉包裹类型 |
+| [006](006-stories-user-resolution.md) | stories `User not found` 与 REST `reels_media` 失效 | 错误语义 / 端点退化 | 错误必须保留状态码；HTML 抓取显式 `responseType: 'text'` 并准备多来源退路 |
 
 ## 高频雷区（写码前自查）
 
@@ -30,6 +31,9 @@
 - **Cookie 合并是 append 不是覆盖**：`sessionid=…; csrftoken=…`。
 - **原生 `fetch` 不对 4xx/5xx 抛异常**，登录/challenge 重定向要手动检测 `response.url`。
 - **反爬头缺一即 403**：`X-IG-App-ID` / `X-ASBD-ID` / `X-IG-WWW-Claim` / `X-Requested-With` / `Referer`，统一由 `InstagramRestAPI._call()` 注入。
+- **错误保留状态码与 body 摘要**：`_call()` 按文本读取后自行解析 JSON，非 2xx / 非 JSON 都要抛带上下文的错误；禁止 `catch {}` 后统一 `User not found`。见 [006](006-stories-user-resolution.md)。
+- **HTML 抓取必须 `responseType: 'text'` 且准备多特征**：`profile_id` 会缺席，优先 `page_id":"profilePage_<id>`；stories 数据优先取页面内嵌 `xdt_api__v1__feed__reels_media`。见 [006](006-stories-user-resolution.md)。
+- **端点退化要留退路**：REST `reels_media` 对网页 session 已返回 500；单一数据源不可靠时用页面 payload / 可配置策略链。
 
 ### 3. 配置与选项
 

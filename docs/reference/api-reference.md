@@ -292,7 +292,7 @@ _assignUser(user: InstagramUser): void
 | `InstagramPostsExtractor` | `posts` | `/{username}/posts` | `api.userFeed()` |
 | `InstagramReelsExtractor` | `reels` | `/{username}/reels` | `api.userClips()` |
 | `InstagramTaggedExtractor` | `tagged` | `/{username}/tagged` | `api.userTagged()`（额外产出 `tagged_*` 元数据） |
-| `InstagramStoriesExtractor` | `stories` / `highlights` | `/stories/{user}/`、`/stories/highlights/{id}`、`/aGlnaGxpZ2h0…` | `api.reelsMedia()` |
+| `InstagramStoriesExtractor` | `stories` / `highlights` | `/stories/{user}/`、`/stories/highlights/{id}`、`/aGlnaGxpZ2h0…` | stories 页面内嵌 payload → `api.reelsMedia()` 回退 |
 | `InstagramHighlightsExtractor` | `highlights` | `/{username}/highlights` | `api.highlightsMedia()` |
 | `InstagramTagExtractor` | `tag` | `/explore/tags/{tag}` | `api.tagsMedia()` |
 | `InstagramInfoExtractor` | `info` | `/{username}/info` | `api.userById()` → 单个 Directory |
@@ -311,6 +311,7 @@ class InstagramRestAPI {
     csrfToken: { value: string }
     wwwClaim: { value: string }
     cursor: { value: string | null }
+    userStrategies?: () => string[]   // 默认 ['search', 'web']
   })
 
   // 帖子 / 媒体
@@ -334,11 +335,11 @@ class InstagramRestAPI {
 
   // 用户解析
   userById(userId: string): Promise<InstagramUser>
-  userByName(username: string): Promise<InstagramUser>
+  userByName(username: string): Promise<InstagramUser>      // 解析 { data: { user } }
   userBySearch(username: string): Promise<InstagramUser>
-  userByWeb(username: string): Promise<{ id: string }>
-  userByScreenName(screenName: string): Promise<InstagramUser>   // search → info → web
-  userId(screenName: string, checkPrivate?: boolean): Promise<string>
+  userByWeb(username: string): Promise<{ id: string }>      // page_id / profile_id
+  userByScreenName(screenName: string, strategies?: string[]): Promise<InstagramUser>
+  userId(screenName: string, checkPrivate?: boolean, strategies?: string[]): Promise<string>
 
   // 社交图
   userFollowers(userId: string): AsyncGenerator<InstagramUser>
@@ -347,6 +348,8 @@ class InstagramRestAPI {
 ```
 
 所有请求经 `_call()` 注入 `Cookie: csrftoken=…`、`X-CSRFToken`、`X-IG-App-ID`、`X-ASBD-ID`、`X-IG-WWW-Claim`、`X-Requested-With`、`Referer`，并在登录/challenge 重定向时抛错。
+
+`_call()` 以文本取回响应后自行解析 JSON：非 2xx 抛出含状态码与 body 摘要的错误，2xx 非 JSON 抛出 `non-JSON response`。`userByScreenName()` 默认策略 `['search', 'web']`（可由 `user-strategy` 配置覆盖），全部失败时汇总每条策略的原因。
 
 ### Parsers
 

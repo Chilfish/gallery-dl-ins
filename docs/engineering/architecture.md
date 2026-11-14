@@ -216,22 +216,26 @@ Referer:            https://www.instagram.com/
 
 这些头是 Instagram 的反爬校验——缺任意一个都会 403。
 
+`_call()` 以 `responseType: 'text'` 取回响应后自行 `JSON.parse`：非 2xx 抛出带状态码与 body 摘要的错误（如 `Instagram API error 429 at …: …`），2xx 但非 JSON（例如登录壳 HTML）单独报 `non-JSON response`。因此 404 / 429 / 空 body 不再被吞成统一的 `User not found`。
+
 ### 6.2 用户查找策略链
 
 ```typescript
-userByScreenName(name):
-  for strategy in ['search', 'info', 'web']:
+userByScreenName(name, strategies = cfg('user-strategy', ['search', 'web'])):
+  for strategy in strategies:
     try search → return
     try info   → return
     try web    → return
-  throw NotFound
+  throw Error(`User not found: ${name} (search: …; web: …)`)
 ```
+
+默认链与 Python 对齐为 `search,web`，可用 `extractor.instagram.user-strategy`（字符串 `"search,info,web"` 或数组）覆盖。每条策略的失败原因会汇总进最终错误。
 
 | 策略 | 端点 | 说明 |
 |------|------|------|
 | `search` | `instagram.com/web/search/topsearch/` | 用户名精确匹配 |
-| `info` | `/api/v1/users/web_profile_info/` | API 查询 |
-| `web` | `instagram.com/{username}` | HTML 页面正则提取 `profile_id` |
+| `info` | `/api/v1/users/web_profile_info/` | 响应形状 `{ data: { user } }` |
+| `web` | `instagram.com/{username}` | HTML 页面提取 `page_id":"profilePage_<id>`，回退 `profile_id` |
 
 ### 6.3 分页引擎
 
@@ -323,6 +327,8 @@ InstagramPostExtractor
     └── api.media(shortcode) → 单个帖子
 
 InstagramStoriesExtractor
+    ├── 先请求 stories 页面，解析内嵌 xdt_api__v1__feed__reels_media
+    ├── 页面无 payload → 回退 api.userId + api.reelsMedia([reelId])
     ├── highlight:XXXX → 直接作为 reel ID
     ├── --split → 每个 frame 独立产出
     └── --mediaId → 只取出特定 frame
