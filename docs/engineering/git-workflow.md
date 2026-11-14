@@ -130,7 +130,9 @@ bun run build         # tsdown（SDK + CLI 双构建）
    - `npm publish --provenance --access public`（OIDC 换取短时 token）
    - 只负责发布 npm，不自动创建 GitHub Release
 4. 发布成功后手写 GitHub Release：以 CHANGELOG 版本节为底稿，正文首段引用对应 issue，末尾写 `Closes #<n>`，用 `gh release create v<version> --notes-file <file>` 提交
-5. 发布后核验：`npm view @chilfish/gallery-dl-instagram dist-tags`、GitHub Release、npm 页面的 provenance
+5. 发布后核验：`npm view @chilfish/gallery-dl-instagram dist-tags`、`npm stage list @chilfish/gallery-dl-instagram`、GitHub Release、npm 页面的 provenance
+
+> npm 11 发布后会先进入 `Validating` 状态数分钟，期间 `npm view <pkg>@<version>` 仍是 404、`dist-tags` 也不会更新。用 `npm stage list <pkg>` 确认状态，**不要因此重复发布**；校验通过后版本自动出现在 registry。
 
 ### 发版文案（CHANGELOG 版本节 + GitHub Release）
 

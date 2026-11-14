@@ -85,6 +85,7 @@
 ### 发布后（核验）
 
 8. `npm view @chilfish/gallery-dl-instagram dist-tags` 指向新版本
+   - npm 11 发布后先进入 `Validating` 状态数分钟，期间 `npm view <pkg>@<version>` 返回 404。用 `npm stage list @chilfish/gallery-dl-instagram` 确认状态，**不要重复发布**
 9. 临时目录安装并从 registry 冒烟：
 
    ```bash
@@ -112,11 +113,15 @@
 
 ### 0.2.5（2026-11-14）
 
-- 首个 OIDC 发布，用于验证 Trusted Publisher 配置
+- 首个 OIDC 发布，用于验证 Trusted Publisher 配置；发布后由 `Pending validation` 转为生效
 - 修复 stories 提取在用户名解析失败或 REST `reels_media` 不可用时不可用（#2）
-- 发布提交 `chore(release): v0.2.5`，tag `v0.2.5`
+- 发布提交 `fix(package): 补齐 repository 并修正 bin 路径`，tag `v0.2.5`；`publish.yml` 全步骤通过
 - 离线门禁：typecheck / lint / 169 tests / build 全绿
 - 真实环境冒烟：stories 页面 payload 路径提取 3 条 story 通过
+- registry：`latest = 0.2.5`，`bin = { "dl-ins": "dist/dl-ins.mjs" }`，`repository.url` 指向 GitHub
+- 首次发布失败：缺少 `repository.url` 被 provenance 拒绝，`bin` 带 `./` 前缀被 npm 11 移除；修复后重新打 tag 发布
+- 发布后约 1 分钟处于 `Validating`，期间 `npm view` 仍为 0.2.4；校验通过后 `dist-tags` 自动指向 0.2.5
+- GitHub Release v0.2.5 已创建，issue #2 已关闭
 
 ## 参考资料（上游文档）
 
