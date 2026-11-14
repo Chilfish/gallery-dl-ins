@@ -9,14 +9,8 @@ export default defineConfig([
     clean: true,
     platform: 'neutral',
     target: 'es2022',
-    outExtension({ format }) {
-      return {
-        dts: format === 'cjs' ? '.d.cts' : '.d.mts',
-        js: format === 'cjs' ? '.cjs' : '.mjs',
-      }
-    },
     deps: {
-      skipNodeModulesBundle: true,
+      neverBundle: [/^node:/],
     },
     exports: true,
   },
@@ -28,5 +22,8 @@ export default defineConfig([
     dts: false,
     platform: 'node',
     target: 'es2022',
+    deps: {
+      onlyBundle: ['commander'],
+    },
   },
 ])

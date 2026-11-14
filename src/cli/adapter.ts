@@ -9,7 +9,7 @@
 
 import type { Logger } from '../core/extractor'
 import type { HttpClient } from '../types'
-import { createFetchHttpClient, extractCsrf } from '../fetcher'
+import { createFetchHttpClient, extractCsrf, headersToRecord } from '../fetcher'
 import { createCookieJar } from './cookies'
 
 // ── Cookie-based client (CLI session mode) ──
@@ -27,7 +27,9 @@ export function createHttpClient(
   _logger?: Logger,
 ): HttpClient {
   const baseCookie = fullCookies
-    || (sessionId ? `sessionid=${sessionId}` : null)
+    || (sessionId
+      ? `sessionid=${sessionId}`
+      : null)
 
   return createFetchHttpClient({
     cookie: baseCookie ?? undefined,
@@ -59,7 +61,6 @@ export async function createWebClient(
         'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     },
   })
-  const { headersToRecord } = await import('../fetcher')
   jar.setFromResponse(headersToRecord(seedResp.headers))
   const cookieCount = jar.getCookieHeader().split(';').length
   logger?.debug(`  ← ${seedResp.status} — got ${cookieCount} cookies`)
