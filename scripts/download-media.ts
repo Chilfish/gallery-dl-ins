@@ -36,9 +36,13 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
 
 const inputPath = args[0]!
 const concIdx = args.indexOf('--concurrency')
-const concurrency = concIdx >= 0 ? Number.parseInt(args[concIdx + 1]!, 10) : 16
+const concurrency = concIdx >= 0
+  ? Number.parseInt(args[concIdx + 1]!, 10)
+  : 16
 const outIdx = args.indexOf('--outdir')
-const outRoot = outIdx >= 0 ? args[outIdx + 1]! : 'data'
+const outRoot = outIdx >= 0
+  ? args[outIdx + 1]!
+  : 'data'
 
 // ─── 类型 ───────────────────────────────────────────────
 
@@ -151,7 +155,14 @@ async function main() {
       const localPath = join(baseDir, filename)
       const cdnUrl = `https://s3.chilfish.top/instagram/${username}/${post.id}-${idx}.${ext}`
 
-      tasks.push({ postIdx: pi, mediaIdx: mi, srcUrl, ext, localPath, cdnUrl })
+      tasks.push({
+        postIdx: pi,
+        mediaIdx: mi,
+        srcUrl,
+        ext,
+        localPath,
+        cdnUrl,
+      })
     }
   }
 
@@ -166,7 +177,14 @@ async function main() {
     const avLocalPath = join(baseDir, avFilename)
     avatarCdnUrl = `https://s3.chilfish.top/instagram/${username}.${avExt}`
     // 插入队首优先下载
-    tasks.unshift({ postIdx: -1, mediaIdx: -1, srcUrl: avatarSrc, ext: avExt, localPath: avLocalPath, cdnUrl: avatarCdnUrl })
+    tasks.unshift({
+      postIdx: -1,
+      mediaIdx: -1,
+      srcUrl: avatarSrc,
+      ext: avExt,
+      localPath: avLocalPath,
+      cdnUrl: avatarCdnUrl,
+    })
   }
 
   const totalFiles = tasks.length

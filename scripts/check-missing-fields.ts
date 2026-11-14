@@ -21,7 +21,9 @@ const username = process.argv[2] || 'meeeei.gt'
 const api = new InstagramRestAPI({
   http: createFetchHttpClient({ cookie: env.INSTAGRAM_COOKIES! }),
   root: 'https://www.instagram.com',
-  csrfToken: { value: extractCsrf(env.INSTAGRAM_COOKIES!) },
+  csrfToken: {
+    value: extractCsrf(env.INSTAGRAM_COOKIES!),
+  },
   wwwClaim: { value: '' },
   cursor: { value: null },
 })

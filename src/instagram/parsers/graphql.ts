@@ -43,8 +43,11 @@ export function parsePostGraphql(
   data.description = parseUnicodeEscapes(data.description)
 
   const tags = cfg.findTags(data.description)
-  if (tags.length > 0)
-    data.tags = [...new Set(tags)].sort()
+  if (tags.length > 0) {
+    data.tags = [
+      ...new Set(tags),
+    ].sort()
+  }
 
   const location = post.location as InstagramPost['location'] | undefined
   if (location) {

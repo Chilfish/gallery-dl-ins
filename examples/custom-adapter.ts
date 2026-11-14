@@ -34,11 +34,15 @@ const fetchHttpClient: HttpClient = {
     const resp = await fetch(url.toString(), {
       method: config.method ?? 'GET',
       headers,
-      body: config.data ? JSON.stringify(config.data) : undefined,
+      body: config.data
+        ? JSON.stringify(config.data)
+        : undefined,
       redirect: 'follow',
     })
 
-    const data = (resp.status === 204 ? '' : await resp.json().catch(() => resp.text())) as T
+    const data = (resp.status === 204
+      ? ''
+      : await resp.json().catch(() => resp.text())) as T
 
     const result: HttpResponse<T> = {
       data,
@@ -54,7 +58,9 @@ const fetchHttpClient: HttpClient = {
 const memoryStorage: Storage = {
   async exists(_path: string): Promise<boolean> { return false },
   async write(path: string, data: Uint8Array | string): Promise<void> {
-    const size = typeof data === 'string' ? data.length : data.byteLength
+    const size = typeof data === 'string'
+      ? data.length
+      : data.byteLength
     console.log(`  💾 [memory] 写入: ${path} (${(size / 1024).toFixed(1)} KB)`)
   },
   async mkdir(_path: string): Promise<void> {

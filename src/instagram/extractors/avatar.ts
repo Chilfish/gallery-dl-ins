@@ -58,7 +58,9 @@ export class InstagramAvatarExtractor extends InstagramExtractor {
       user,
       caption: null,
       like_count: 0,
-      image_versions2: { candidates: [avatar] },
+      image_versions2: {
+        candidates: [avatar],
+      },
     } as unknown as InstagramPost
   }
 }

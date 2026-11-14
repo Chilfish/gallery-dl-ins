@@ -66,14 +66,18 @@ function createApi(): InstagramRestAPI {
   return new InstagramRestAPI({
     http: createFetchHttpClient({ cookie: cookies }),
     root: 'https://www.instagram.com',
-    csrfToken: { value: extractCsrf(cookies) },
+    csrfToken: {
+      value: extractCsrf(cookies),
+    },
     wwwClaim: { value: '0' },
     cursor: { value: null },
   })
 }
 
 function iso(sec: number | undefined): string {
-  return sec ? new Date(sec * 1000).toISOString() : '-'
+  return sec
+    ? new Date(sec * 1000).toISOString()
+    : '-'
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -89,7 +93,9 @@ function printItems(reel: Reel): void {
   console.log(`reel ${reel.id} @${username} title=${reel.title ?? '-'} media=${reel.media_count ?? items.length} seen=${reel.seen ?? '-'}`)
   for (let i = 0; i < items.length; i++) {
     const item = items[i]!
-    const kind = item.media_type === 2 ? 'video' : 'photo'
+    const kind = item.media_type === 2
+      ? 'video'
+      : 'photo'
     const url = item.video_versions?.[0]?.url ?? item.image_versions2?.candidates?.[0]?.url
     console.log(`  [${i + 1}] ${kind} pk=${item.pk} code=${item.code ?? '-'} taken=${iso(item.taken_at)} expires=${iso(item.expiring_at)}`)
     if (item.story_link_url)
@@ -121,9 +127,14 @@ async function cmdTray(api: InstagramRestAPI): Promise<void> {
     reels = await fetchReels(api, tray.map(t => t.id))
   }
   catch (err) {
-    console.log('取 media 失败:', err instanceof Error ? err.message : String(err))
+    console.log('取 media 失败:', err instanceof Error
+      ? err.message
+      : String(err))
   }
-  const byId = new Map(reels.map(r => [String(r.id), r]))
+  const byId = new Map(reels.map(r => [
+    String(r.id),
+    r,
+  ]))
 
   for (const entry of tray) {
     const mediaIds = entry.media_ids ?? []
@@ -160,7 +171,10 @@ async function cmdHighlights(api: InstagramRestAPI, username: string): Promise<v
   }
 
   const reels = await fetchReels(api, tray.map(h => h.id))
-  const byId = new Map(reels.map(r => [String(r.id), r]))
+  const byId = new Map(reels.map(r => [
+    String(r.id),
+    r,
+  ]))
 
   for (const hl of tray) {
     console.log(`[${hl.id}] ${hl.title ?? '(无标题)'} media=${hl.media_count ?? '-'}`)
@@ -232,7 +246,12 @@ async function main(): Promise<void> {
     return
   }
 
-  const needArg = ['user', 'story', 'highlights', 'highlight']
+  const needArg = [
+    'user',
+    'story',
+    'highlights',
+    'highlight',
+  ]
   if (needArg.includes(command) && !arg) {
     console.error(`命令 ${command} 需要一个参数\n`)
     usage()
@@ -268,6 +287,8 @@ async function main(): Promise<void> {
 main()
   .then(() => process.exit(0))
   .catch((err) => {
-    console.error('💥', err instanceof Error ? err.message : String(err))
+    console.error('💥', err instanceof Error
+      ? err.message
+      : String(err))
     process.exit(1)
   })

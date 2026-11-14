@@ -21,7 +21,9 @@ function makeParserConfig(overrides: Partial<ParserConfig> = {}): ParserConfig {
     parseTimestamp: (ts: number | null | undefined) => {
       if (ts == null)
         return ''
-      const asMs = ts > 2_500_000_000 ? ts : ts * 1000
+      const asMs = ts > 2_500_000_000
+        ? ts
+        : ts * 1000
       return new Date(asMs).toISOString()
     },
     staticVideo: false,
@@ -41,7 +43,9 @@ const mockUser = {
 
 /** Minimal mock image version */
 const mockImage = {
-  candidates: [{ url: 'https://example.com/photo.jpg', width: 1080, height: 1350 }],
+  candidates: [
+    { url: 'https://example.com/photo.jpg', width: 1080, height: 1350 },
+  ],
 }
 
 /** REST parser */
@@ -85,13 +89,17 @@ describe('parsePostRest', () => {
         {
           pk: '3400000000000000003',
           image_versions2: {
-            candidates: [{ url: 'https://example.com/img1.jpg', width: 1080, height: 1080 }],
+            candidates: [
+              { url: 'https://example.com/img1.jpg', width: 1080, height: 1080 },
+            ],
           },
         },
         {
           pk: '3400000000000000004',
           image_versions2: {
-            candidates: [{ url: 'https://example.com/img2.jpg', width: 1080, height: 1080 }],
+            candidates: [
+              { url: 'https://example.com/img2.jpg', width: 1080, height: 1080 },
+            ],
           },
         },
       ],
@@ -115,7 +123,12 @@ describe('parsePostRest', () => {
       user: mockUser,
       image_versions2: mockImage,
       video_versions: [
-        { url: 'https://example.com/video.mp4', width: 1080, height: 1920, type: 101 },
+        {
+          url: 'https://example.com/video.mp4',
+          width: 1080,
+          height: 1920,
+          type: 101,
+        },
       ],
     }
 
@@ -141,14 +154,18 @@ describe('parsePostRest', () => {
           pk: '3400000000000000006',
           taken_at: 1700000001,
           image_versions2: {
-            candidates: [{ url: 'https://example.com/story1.jpg', width: 1080, height: 1920 }],
+            candidates: [
+              { url: 'https://example.com/story1.jpg', width: 1080, height: 1920 },
+            ],
           },
         },
         {
           pk: '3400000000000000007',
           taken_at: 1700000002,
           image_versions2: {
-            candidates: [{ url: 'https://example.com/story2.jpg', width: 1080, height: 1920 }],
+            candidates: [
+              { url: 'https://example.com/story2.jpg', width: 1080, height: 1920 },
+            ],
           },
         },
       ],
@@ -236,7 +253,11 @@ describe('parsePostGraphql', () => {
         full_name: 'Test User',
       },
       edge_media_to_caption: {
-        edges: [{ node: { text: 'GraphQL caption' } }],
+        edges: [
+          {
+            node: { text: 'GraphQL caption' },
+          },
+        ],
       },
       display_url: 'https://example.com/gql.jpg',
       dimensions: { width: 1080, height: 1080 },
@@ -317,7 +338,10 @@ describe('parsePostGraphql', () => {
       edge_media_to_caption: { edges: [] },
       display_url: 'https://example.com/gql.jpg',
       dimensions: { width: 1080, height: 1080 },
-      pinned_for_users: [{ id: '99999' }, { id: '88888' }],
+      pinned_for_users: [
+        { id: '99999' },
+        { id: '88888' },
+      ],
     }
 
     const result = parsePostGraphql(post, cfg)

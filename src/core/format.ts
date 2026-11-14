@@ -6,7 +6,9 @@ export function formatBytes(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB']
   const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
   const val = bytes / 1024 ** i
-  return `${val.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
+  return `${val.toFixed(i === 0
+    ? 0
+    : 1)} ${units[i]}`
 }
 
 const BOLD = '\x1B[1m'
@@ -32,5 +34,7 @@ export const _YELLOW = YELLOW
 export const _RESET = RESET
 
 export function pad(s: string, n: number): string {
-  return s.length >= n ? s : s + ' '.repeat(n - s.length)
+  return s.length >= n
+    ? s
+    : s + ' '.repeat(n - s.length)
 }

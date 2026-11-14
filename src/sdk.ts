@@ -139,15 +139,17 @@ export class InstagramSDK {
     ]) {
       const match = Cls.pattern.exec(url)
       if (match) {
-        const inst = Reflect.construct(Cls, [{
-          url,
-          match,
-          config: this.config,
-          http: this.http,
-          storage: this.storage,
-          log: this.log,
-          csrfToken: this._csrfToken,
-        }])
+        const inst = Reflect.construct(Cls, [
+          {
+            url,
+            match,
+            config: this.config,
+            http: this.http,
+            storage: this.storage,
+            log: this.log,
+            csrfToken: this._csrfToken,
+          },
+        ])
         return inst as Extractor
       }
     }

@@ -53,7 +53,11 @@ describe('configManager.set', () => {
   })
 
   it('overwrites a nested value', () => {
-    const cfg = new ConfigManager({ a: { b: { c: 1 } } })
+    const cfg = new ConfigManager({
+      a: {
+        b: { c: 1 },
+      },
+    })
     cfg.set('a.b.d', 2)
     expect(cfg.get('a.b.c')).toBe(1)
     expect(cfg.get('a.b.d')).toBe(2)
@@ -83,8 +87,22 @@ describe('configManager.interpolate', () => {
   })
 
   it.each([
-    ['grandparent level', { extractor: { videos: 'grandparent' } }, 'grandparent'],
-    ['instagram level', { extractor: { instagram: { videos: true } } }, true],
+    [
+      'grandparent level',
+      {
+        extractor: { videos: 'grandparent' },
+      },
+      'grandparent',
+    ],
+    [
+      'instagram level',
+      {
+        extractor: {
+          instagram: { videos: true },
+        },
+      },
+      true,
+    ],
   ])('finds key at %s', (_, data, expected) => {
     const cfg = new ConfigManager(data)
     expect(cfg.interpolate(['extractor', 'instagram', 'post'], 'videos')).toBe(expected)

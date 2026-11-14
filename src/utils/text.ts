@@ -161,8 +161,12 @@ export function parseInt(
 ): number {
   if (value == null)
     return default_
-  const n = typeof value === 'number' ? value : Number.parseInt(String(value), 10)
-  return Number.isFinite(n) ? n : default_
+  const n = typeof value === 'number'
+    ? value
+    : Number.parseInt(String(value), 10)
+  return Number.isFinite(n)
+    ? n
+    : default_
 }
 
 // Regex helper: compile a pattern and call .findall()
@@ -170,7 +174,11 @@ export function tagRe(pattern: string): (text: string) => string[] {
   const re = new RegExp(pattern, 'g')
   return (text: string) => {
     const matches = text.match(re)
-    return matches ? [...new Set(matches)] : []
+    return matches
+      ? [
+          ...new Set(matches),
+        ]
+      : []
   }
 }
 

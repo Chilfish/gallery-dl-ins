@@ -24,23 +24,35 @@ describe('instagramPostExtractor integration', () => {
   const url = 'https://www.instagram.com/p/DY1p3ufmcBS/'
 
   const mockPost = {
-    items: [{
-      pk: '3400000000000000001',
-      code: 'DY1p3ufmcBS',
-      taken_at: 1717000000,
-      user: mockUser,
-      caption: { text: 'A beautiful photo #sunset' },
-      like_count: 42,
-      image_versions2: {
-        candidates: [
-          { url: 'https://example.com/photo_1080.jpg', width: 1080, height: 1350, url_signature: {} },
-          { url: 'https://example.com/photo_480.jpg', width: 480, height: 600, url_signature: {} },
-        ],
+    items: [
+      {
+        pk: '3400000000000000001',
+        code: 'DY1p3ufmcBS',
+        taken_at: 1717000000,
+        user: mockUser,
+        caption: { text: 'A beautiful photo #sunset' },
+        like_count: 42,
+        image_versions2: {
+          candidates: [
+            {
+              url: 'https://example.com/photo_1080.jpg',
+              width: 1080,
+              height: 1350,
+              url_signature: {},
+            },
+            {
+              url: 'https://example.com/photo_480.jpg',
+              width: 480,
+              height: 600,
+              url_signature: {},
+            },
+          ],
+        },
+        media_type: 1,
+        comment_count: 3,
+        has_liked: false,
       },
-      media_type: 1,
-      comment_count: 3,
-      has_liked: false,
-    }],
+    ],
     num_results: 1,
     more_available: false,
   }

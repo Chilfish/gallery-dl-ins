@@ -24,7 +24,9 @@ export function createCookieJar(): CookieJar {
       if (!raw)
         return
 
-      const cookieHeaders = Array.isArray(raw) ? raw : [raw]
+      const cookieHeaders = Array.isArray(raw)
+        ? raw
+        : [raw]
       for (const header of cookieHeaders) {
         const parts = header.split(';')
         if (parts.length === 0)

@@ -51,8 +51,11 @@ export function parsePostRest(
   }
 
   const tags = cfg.findTags(data.description)
-  if (tags.length > 0)
-    data.tags = [...new Set(tags)].sort()
+  if (tags.length > 0) {
+    data.tags = [
+      ...new Set(tags),
+    ].sort()
+  }
 
   if (post.location) {
     const loc = post.location
@@ -154,7 +157,9 @@ function parseStoryRest(post: InstagramPost, cfg: ParserConfig): ParsedPost {
     type: isStory ? 'story' : 'highlight',
     count: 0,
     _files: [],
-    expires: expires ? cfg.parseTimestamp(expires) : undefined,
+    expires: expires
+      ? cfg.parseTimestamp(expires)
+      : undefined,
     user: post.user,
   }
 
@@ -261,7 +266,9 @@ function parseMediaItem(
 
   if (item.video_versions?.length) {
     video = item.video_versions.reduce((best, v) =>
-      v.width * v.height * v.type > best.width * best.height * best.type ? v : best)
+      v.width * v.height * v.type > best.width * best.height * best.type
+        ? v
+        : best)
     if (item.video_dash_manifest && cfg.videosDash) {
       manifest = item.video_dash_manifest
       width = widthOrig
@@ -360,7 +367,9 @@ export function extractTaggedUsers(
   }
 
   const seen = new Set<string>()
-  dest.tagged_users = dest.tagged_users.filter(t => seen.has(t.id) ? false : (seen.add(t.id), true))
+  dest.tagged_users = dest.tagged_users.filter(t => seen.has(t.id)
+    ? false
+    : (seen.add(t.id), true))
 }
 
 /** Extract audio/music metadata from a story sticker. */

@@ -33,7 +33,9 @@ export class DownloadJob extends Job {
   private _interp(fmt: string, meta: Metadata): string {
     return fmt.replace(/\{(\w+)\}/g, (_, key) => {
       const v = meta[key]
-      return v == null ? '' : String(v)
+      return v == null
+        ? ''
+        : String(v)
     })
   }
 
@@ -70,7 +72,10 @@ export class DownloadJob extends Job {
   }
 
   async handleUrl(msg: UrlMsg): Promise<void> {
-    const meta: Metadata = { ...this._currentDir, ...msg.metadata }
+    const meta: Metadata = {
+      ...this._currentDir,
+      ...msg.metadata,
+    }
 
     if (this._isArchived(meta)) {
       this._skippedCount++
@@ -106,7 +111,9 @@ export class DownloadJob extends Job {
       await this.extractor.storage.write(fullPath, data)
 
       this._fileCount++
-      const size = data instanceof Uint8Array ? data.byteLength : data.length
+      const size = data instanceof Uint8Array
+        ? data.byteLength
+        : data.length
       this._downloadedBytes += size
       this.extractor.log.info(`  └─ ${filename}  (${formatBytes(size)})`)
 
@@ -119,7 +126,10 @@ export class DownloadJob extends Job {
   }
 
   async handleQueue(msg: QueueMsg): Promise<void> {
-    const meta = { ...this._currentDir, ...msg.metadata }
+    const meta = {
+      ...this._currentDir,
+      ...msg.metadata,
+    }
     const extrClass = meta._extractor
     if (!extrClass || typeof extrClass !== 'function')
       return
@@ -138,14 +148,16 @@ export class DownloadJob extends Job {
       return
 
     const parentExtr = this.extractor
-    const childExtr = Reflect.construct(cls, [{
-      url: msg.url,
-      match,
-      config: parentExtr.config,
-      http: parentExtr.http,
-      storage: parentExtr.storage,
-      log: parentExtr.log,
-    }])
+    const childExtr = Reflect.construct(cls, [
+      {
+        url: msg.url,
+        match,
+        config: parentExtr.config,
+        http: parentExtr.http,
+        storage: parentExtr.storage,
+        log: parentExtr.log,
+      },
+    ])
 
     const childJob = new DownloadJob(childExtr)
     childJob.basePath = (this as unknown as DownloadJob).basePath
@@ -191,7 +203,9 @@ export class DownloadJob extends Job {
   private _buildFilename(meta: Metadata): string {
     const mid = meta.media_id ?? '0'
     const ext = meta.extension ?? 'jpg'
-    const num = meta.num ? `_${meta.num}` : ''
+    const num = meta.num
+      ? `_${meta.num}`
+      : ''
     return `${mid}${num}.${ext}`
   }
 }

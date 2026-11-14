@@ -40,7 +40,9 @@ export function buildUrl(base: string, params?: Record<string, string | number |
   if (entries.length === 0)
     return base
   const qs = new URLSearchParams(entries).toString()
-  return `${base}${base.includes('?') ? '&' : '?'}${qs}`
+  return `${base}${base.includes('?')
+    ? '&'
+    : '?'}${qs}`
 }
 
 /** Merge cookie strings with append semantics: a=1 + b=2 → a=1; b=2 */
@@ -140,7 +142,9 @@ export function createFetchHttpClient(opts: FetchClientOptions = {}): HttpClient
       const reqCookie = cookieProvider?.() ?? cookie
       if (reqCookie) {
         const existing = headers.get('Cookie')
-        headers.set('Cookie', existing ? mergeCookie(reqCookie, existing) : reqCookie)
+        headers.set('Cookie', existing
+          ? mergeCookie(reqCookie, existing)
+          : reqCookie)
       }
       if (!headers.has('User-Agent')) {
         headers.set('User-Agent', userAgent)

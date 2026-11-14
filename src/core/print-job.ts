@@ -49,7 +49,10 @@ export class PrintJob extends Job {
   }
 
   async handleUrl(msg: UrlMsg): Promise<void> {
-    const meta = { ...this._currentDir, ...msg.metadata }
+    const meta = {
+      ...this._currentDir,
+      ...msg.metadata,
+    }
     this._fileCount++
     const ext = (meta.extension as string) ?? 'jpg'
     const mid = meta.media_id ?? '?'
@@ -80,7 +83,10 @@ export class PrintJob extends Job {
     this._postCount = 0
     this._files = []
 
-    const meta = { ...this._currentDir, ...msg.metadata }
+    const meta = {
+      ...this._currentDir,
+      ...msg.metadata,
+    }
     const extrClass = meta._extractor
     if (!extrClass || typeof extrClass !== 'function')
       return
@@ -99,14 +105,16 @@ export class PrintJob extends Job {
       return
 
     const parentExtr = this.extractor
-    const childExtr = Reflect.construct(cls, [{
-      url: msg.url,
-      match,
-      config: parentExtr.config,
-      http: parentExtr.http,
-      storage: parentExtr.storage,
-      log: parentExtr.log,
-    }])
+    const childExtr = Reflect.construct(cls, [
+      {
+        url: msg.url,
+        match,
+        config: parentExtr.config,
+        http: parentExtr.http,
+        storage: parentExtr.storage,
+        log: parentExtr.log,
+      },
+    ])
 
     const childJob = new PrintJob(childExtr)
     const childStatus = await childJob.run()
@@ -132,19 +140,27 @@ export class PrintJob extends Job {
     process.stdout.write(`\n${dim('┌')}${'─'.repeat(padL)}${b(header)}${'─'.repeat(padR)}${dim('┐')}\n`)
 
     const row = (label: string, value: string, color?: ((s: string) => string) | string): void => {
-      const colored = typeof color === 'function' ? color(value) : color ? `${color}${value}${_RESET}` : value
+      const colored = typeof color === 'function'
+        ? color(value)
+        : color
+          ? `${color}${value}${_RESET}`
+          : value
       process.stdout.write(` ${dim('│')} ${c(pad(label, labelW))} ${colored}\n`)
     }
 
     const username = (m.username as string) ?? '?'
     const fullname = (m.fullname as string) ?? ''
-    const author = fullname ? `${username} (${fullname})` : username
+    const author = fullname
+      ? `${username} (${fullname})`
+      : username
     row('Author:', author, g)
 
     const date = (m.date as string) ?? (m.post_date as string) ?? '?'
     row('Date:', date)
 
-    const likes = typeof m.likes === 'number' ? m.likes.toLocaleString() : '?'
+    const likes = typeof m.likes === 'number'
+      ? m.likes.toLocaleString()
+      : '?'
     row('Likes:', `${likes}  |  Liked: ${m.liked ? 'yes' : 'no'}`)
 
     const ptype = (m.type as string) ?? '?'
@@ -212,12 +228,16 @@ export class PrintJob extends Job {
     const locName = (m.location_slug as string) ?? ''
     const locId = (m.location_id as string) ?? ''
     if (locName || locId) {
-      row('Location:', locId ? `${locName} (ID: ${locId})` : locName)
+      row('Location:', locId
+        ? `${locName} (ID: ${locId})`
+        : locName)
     }
 
     const coauthors = m.coauthors as Array<{ username: string, full_name?: string }> | undefined
     if (coauthors && coauthors.length > 0) {
-      row('Co-authors:', coauthors.map(c => c.full_name ? `${c.username} (${c.full_name})` : c.username).join(', '))
+      row('Co-authors:', coauthors.map(c => c.full_name
+        ? `${c.username} (${c.full_name})`
+        : c.username).join(', '))
     }
 
     const pinned = m.pinned as string[] | undefined
@@ -236,7 +256,9 @@ export class PrintJob extends Job {
     const taggedUser = (m.tagged_username as string) ?? ''
     if (taggedUser) {
       const taggedFull = (m.tagged_full_name as string) ?? ''
-      row('Tagged by:', taggedFull ? `${taggedUser} (${taggedFull})` : taggedUser)
+      row('Tagged by:', taggedFull
+        ? `${taggedUser} (${taggedFull})`
+        : taggedUser)
     }
 
     if (this._files.length > 0) {
@@ -249,8 +271,12 @@ export class PrintJob extends Job {
 
       for (const f of this._files) {
         const numStr = `[${String(f.num).padStart(maxNumW)}]`
-        const dimStr = f.filename.length > 40 ? `${f.filename.slice(0, 37)}...` : pad(f.filename, dimW)
-        const res = f.width ? `${f.width}x${f.height}` : '?x?'
+        const dimStr = f.filename.length > 40
+          ? `${f.filename.slice(0, 37)}...`
+          : pad(f.filename, dimW)
+        const res = f.width
+          ? `${f.width}x${f.height}`
+          : '?x?'
         const badges: string[] = []
         if (f.videoUrl)
           badges.push('video')
@@ -288,7 +314,9 @@ export class PrintJob extends Job {
       process.stdout.write(` ${dim('│')} ${b('Music:')}\n`)
       for (const af of audioFiles) {
         if (af.audioTitle) {
-          const title = af.audioArtist ? `${af.audioTitle} — ${af.audioArtist}` : af.audioTitle
+          const title = af.audioArtist
+            ? `${af.audioTitle} — ${af.audioArtist}`
+            : af.audioTitle
           process.stdout.write(` ${dim('│')}   ${g('♪')} ${title}\n`)
         }
         if (af.musicAttribution) {

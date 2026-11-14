@@ -78,7 +78,9 @@ export abstract class Extractor {
 
   constructor(opts: ExtractorOptions) {
     this.url = opts.url
-    this.groups = opts.match ? [...opts.match].slice(1) : []
+    this.groups = opts.match
+      ? [...opts.match].slice(1)
+      : []
     this.config = opts.config
     this.http = opts.http
     this.storage = opts.storage
@@ -194,7 +196,9 @@ export abstract class Extractor {
     if (ts == null)
       return ''
     // If ts looks like milliseconds (year > 2100 in seconds)
-    const asMs = ts > 2_500_000_000 ? ts : ts * 1000
+    const asMs = ts > 2_500_000_000
+      ? ts
+      : ts * 1000
     return new Date(asMs).toISOString()
   }
 

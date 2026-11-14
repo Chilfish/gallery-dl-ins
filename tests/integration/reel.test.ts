@@ -23,25 +23,37 @@ describe('instagram reel extraction', () => {
   const url = 'https://www.instagram.com/reel/CStRGxeA8Q9/'
 
   const mockReel = {
-    items: [{
-      pk: '3400000000000000002',
-      code: 'CStRGxeA8Q9',
-      taken_at: 1717000000,
-      user: mockUser,
-      caption: { text: 'Check out this reel!' },
-      like_count: 100,
-      media_type: 2, // video
-      image_versions2: {
-        candidates: [
-          { url: 'https://example.com/reel_thumb.jpg', width: 1080, height: 1920, url_signature: {} },
+    items: [
+      {
+        pk: '3400000000000000002',
+        code: 'CStRGxeA8Q9',
+        taken_at: 1717000000,
+        user: mockUser,
+        caption: { text: 'Check out this reel!' },
+        like_count: 100,
+        media_type: 2, // video
+        image_versions2: {
+          candidates: [
+            {
+              url: 'https://example.com/reel_thumb.jpg',
+              width: 1080,
+              height: 1920,
+              url_signature: {},
+            },
+          ],
+        },
+        video_versions: [
+          {
+            url: 'https://example.com/reel_video.mp4',
+            width: 1080,
+            height: 1920,
+            type: 101,
+          },
         ],
+        comment_count: 5,
+        has_liked: true,
       },
-      video_versions: [
-        { url: 'https://example.com/reel_video.mp4', width: 1080, height: 1920, type: 101 },
-      ],
-      comment_count: 5,
-      has_liked: true,
-    }],
+    ],
     num_results: 1,
     more_available: false,
   }

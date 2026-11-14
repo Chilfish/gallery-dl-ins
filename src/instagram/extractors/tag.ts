@@ -26,7 +26,9 @@ export class InstagramTagExtractor extends InstagramExtractor {
 
   override async metadata(): Promise<Record<string, unknown>> {
     const tag = this.groups[0] ?? ''
-    return { tag: decodeURIComponent(tag) }
+    return {
+      tag: decodeURIComponent(tag),
+    }
   }
 
   override async* posts(): AsyncGenerator<InstagramPost> {

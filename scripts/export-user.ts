@@ -239,14 +239,16 @@ async function handleQueue(
   if (!match)
     return []
 
-  const child = Reflect.construct(ExtrClass, [{
-    url,
-    match,
-    config: ig.config,
-    http: ig.http,
-    storage: ig.storage,
-    log: ig.log,
-  }]) as {
+  const child = Reflect.construct(ExtrClass, [
+    {
+      url,
+      match,
+      config: ig.config,
+      http: ig.http,
+      storage: ig.storage,
+      log: ig.log,
+    },
+  ]) as {
     initialize: () => Promise<void>
     [Symbol.asyncIterator]: () => AsyncGenerator<Message, void, unknown>
   }

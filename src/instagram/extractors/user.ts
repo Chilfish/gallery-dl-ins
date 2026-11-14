@@ -36,7 +36,15 @@ export class InstagramUserExtractor extends InstagramExtractor {
     const include = this._cfg('include', ['posts']) as string[] | string
     const categories: string[]
       = include === 'all'
-        ? ['posts', 'reels', 'tagged', 'stories', 'highlights', 'info', 'avatar']
+        ? [
+            'posts',
+            'reels',
+            'tagged',
+            'stories',
+            'highlights',
+            'info',
+            'avatar',
+          ]
         : typeof include === 'string'
           ? include.replace(/\s+/g, '').split(',')
           : include

@@ -41,6 +41,11 @@ export class MockHttpClient implements HttpClient {
     }
     // Unmatched — return empty object to avoid crashes
     console.warn(`[MockHTTP] Unmatched request: ${config.url}`)
-    return { status: 200, data: {} as T, headers: {}, url: config.url }
+    return {
+      status: 200,
+      data: {} as T,
+      headers: {},
+      url: config.url,
+    }
   }
 }
