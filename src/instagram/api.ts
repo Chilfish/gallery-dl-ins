@@ -15,6 +15,32 @@ import { idFromShortcode } from '../utils/id-codec'
 const APP_ID = '936619743392459'
 const ASBD_ID = '129477'
 
+const DEFAULT_USER_STRATEGIES = ['search', 'web']
+
+/** Human-readable snippet of an HTML/JSON response body for error messages. */
+function bodySummary(text: string, limit = 200): string {
+  const collapsed = text
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!collapsed)
+    return '(empty body)'
+  return collapsed.length > limit
+    ? `${collapsed.slice(0, limit)}…`
+    : collapsed
+}
+
+/** Normalize a ``user-strategy`` config value into a list. */
+export function normalizeUserStrategies(
+  value: unknown,
+): string[] {
+  if (typeof value === 'string')
+    return value.split(/[\s,]+/).filter(Boolean)
+  if (Array.isArray(value))
+    return value.filter((v): v is string => typeof v === 'string' && v.length > 0)
+  return DEFAULT_USER_STRATEGIES
+}
+
 export class InstagramRestAPI {
   private readonly http: HttpClient
   private readonly root: string
@@ -22,6 +48,7 @@ export class InstagramRestAPI {
   private readonly getWwwClaim: () => string
   private readonly setWwwClaim: (v: string) => void
   private readonly setCsrf: (v: string) => void
+  private readonly getUserStrategies: () => string[]
 
   /** A ref to the extractor's cursor. */
   private getCursor: () => string | null
@@ -33,9 +60,11 @@ export class InstagramRestAPI {
     csrfToken: { value: string }
     wwwClaim: { value: string }
     cursor: { value: string | null }
+    userStrategies?: () => string[]
   }) {
     this.http = opts.http
     this.root = opts.root
+    this.getUserStrategies = opts.userStrategies ?? (() => DEFAULT_USER_STRATEGIES)
 
     this.getCsrf = () => opts.csrfToken.value
     this.setCsrf = (v) => {
@@ -57,7 +86,9 @@ export class InstagramRestAPI {
   /** Single post by shortcode. */
   async* media(shortcode: string): AsyncGenerator<InstagramPost> {
     // Trim shortcode if it happens to be the full "long" form
-    const sc = shortcode.length > 28 ? shortcode.slice(0, -28) : shortcode
+    const sc = shortcode.length > 28
+      ? shortcode.slice(0, -28)
+      : shortcode
     const numericId = idFromShortcode(sc)
     const endpoint = `/v1/media/${numericId}/info/`
     yield* this._pagination(endpoint)
@@ -108,7 +139,7 @@ export class InstagramRestAPI {
       if (Array.isArray(reels))
         return reels as InstagramPost[]
     }
-    throw new Error('Auth required — authenticated cookies needed for reels')
+    throw new Error('reels_media response contained no reels_media array')
   }
 
   /** Story tray. */
@@ -176,10 +207,10 @@ export class InstagramRestAPI {
   /** User by numeric ID. */
   async userById(userId: string): Promise<InstagramUser> {
     const data = await this._call(`/v1/users/${userId}/info/`)
-    if (data && typeof data === 'object') {
-      return (data as Record<string, unknown>).user as InstagramUser
-    }
-    throw new Error('User not found')
+    const user = (data as Record<string, unknown> | null)?.user
+    if (user && typeof user === 'object')
+      return user as InstagramUser
+    throw new Error(`userById: response contained no user for id ${userId}`)
   }
 
   /** User by username (web_profile_info). */
@@ -187,16 +218,20 @@ export class InstagramRestAPI {
     const data = await this._call('/v1/users/web_profile_info/', {
       params: { username },
     })
-    if (data && typeof data === 'object') {
-      return (data as Record<string, unknown>).data as InstagramUser
-    }
-    throw new Error('User not found')
+    // Response shape: { data: { user: { ... } } }
+    const inner = (data as Record<string, unknown> | null)?.data as Record<string, unknown> | undefined
+    const user = inner?.user
+    if (user && typeof user === 'object')
+      return user as InstagramUser
+    throw new Error(`userByName: web_profile_info returned no user for ${username}`)
   }
 
   /** Search user by username. */
   async userBySearch(username: string): Promise<InstagramUser> {
     const url = 'https://www.instagram.com/web/search/topsearch/'
-    const data = await this._call(url, { params: { query: username } })
+    const data = await this._call(url, {
+      params: { query: username },
+    })
     if (data && typeof data === 'object') {
       const users = (data as Record<string, unknown>).users as Array<{ user: InstagramUser }> | undefined
       if (users) {
@@ -208,13 +243,14 @@ export class InstagramRestAPI {
         }
       }
     }
-    throw new Error('User not found')
+    throw new Error(`userBySearch: no match for ${username}`)
   }
 
   /** Scrape user ID from HTML profile page. */
   async userByWeb(username: string): Promise<{ id: string }> {
     const resp = await this.http.request({
       url: `https://www.instagram.com/${username}`,
+      responseType: 'text',
       headers: {
         'Accept':
           'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -228,20 +264,35 @@ export class InstagramRestAPI {
         'Priority': 'u=0, i',
       },
     })
-    const text = typeof resp.data === 'string' ? resp.data : ''
-    const idx = text.indexOf('"profile_id":"')
-    if (idx >= 0) {
-      const start = idx + 15
-      const end = text.indexOf('"', start)
-      if (end > start)
-        return { id: text.slice(start, end) }
+    if (resp.status < 200 || resp.status >= 300)
+      throw new Error(`userByWeb: profile page returned status ${resp.status}`)
+
+    const text = typeof resp.data === 'string'
+      ? resp.data
+      : ''
+
+    // Multiple page variants expose the id under different keys.
+    const patterns = [
+      /"page_id":"profilePage_(\d+)"/,
+      /"profile_id":"(\d+)"/,
+    ]
+    for (const pattern of patterns) {
+      const match = pattern.exec(text)
+      if (match?.[1])
+        return { id: match[1] }
     }
-    throw new Error('User not found')
+
+    throw new Error(`userByWeb: no profile id in profile page for ${username}`)
   }
 
-  /** Resolve screen name via fallback chain: search → info → web. */
-  async userByScreenName(screenName: string): Promise<InstagramUser> {
-    for (const strategy of ['search', 'info', 'web']) {
+  /** Resolve screen name via a configurable fallback chain. */
+  async userByScreenName(
+    screenName: string,
+    strategies: string[] = this.getUserStrategies(),
+  ): Promise<InstagramUser> {
+    const reasons: string[] = []
+
+    for (const strategy of strategies) {
       try {
         if (strategy === 'search')
           return await this.userBySearch(screenName)
@@ -249,26 +300,41 @@ export class InstagramRestAPI {
           return await this.userByName(screenName)
         if (strategy === 'web') {
           const result = await this.userByWeb(screenName)
-          return { pk: result.id, id: result.id, username: screenName, full_name: '' }
+          return {
+            pk: result.id,
+            id: result.id,
+            username: screenName,
+            full_name: '',
+          }
         }
+        reasons.push(`${strategy}: unknown strategy`)
       }
-      catch {
-        // try next strategy
+      catch (err) {
+        reasons.push(`${strategy}: ${err instanceof Error
+          ? err.message
+          : String(err)}`)
       }
     }
-    throw new Error('User not found')
+
+    throw new Error(
+      `User not found: ${screenName} (${reasons.join('; ') || 'no strategy configured'})`,
+    )
   }
 
   /** Resolve username/id to numeric user ID string. */
-  async userId(screenName: string, checkPrivate = true): Promise<string> {
+  async userId(
+    screenName: string,
+    checkPrivate = true,
+    strategies?: string[],
+  ): Promise<string> {
     if (screenName.startsWith('id:')) {
       return screenName.slice(3)
     }
-    const user = await this.userByScreenName(screenName)
+    const user = await this.userByScreenName(screenName, strategies)
     if (checkPrivate && user.is_private && !user.followed_by_viewer) {
       // warn, but proceed
     }
-    return user.id ?? user.pk
+    return (user.id ?? user.pk) as string
   }
 
   /** Followers (paginated). */
@@ -335,6 +401,7 @@ export class InstagramRestAPI {
           )
         : undefined,
       data: opts.data,
+      responseType: 'text',
     })
 
     // Check for login / challenge redirects (same logic as InstagramExtractor.request)
@@ -353,9 +420,46 @@ export class InstagramRestAPI {
       )
     }
 
+    // Decode the body ourselves so non-2xx / HTML responses keep their status
+    // and a readable snippet instead of surfacing as a bare JSON SyntaxError.
+    const raw = resp.data
+    let data: unknown = raw
+    let parseFailed = false
+    if (typeof raw === 'string') {
+      try {
+        data = raw
+          ? JSON.parse(raw)
+          : null
+      }
+      catch {
+        data = null
+        parseFailed = true
+      }
+    }
+
+    if (resp.status < 200 || resp.status >= 300) {
+      const body = typeof raw === 'string'
+        ? bodySummary(raw)
+        : bodySummary(JSON.stringify(raw))
+      throw new Error(
+        `Instagram API error ${resp.status} at ${url}: ${body}`,
+      )
+    }
+
+    if (parseFailed) {
+      const body = typeof raw === 'string'
+        ? bodySummary(raw)
+        : ''
+      throw new Error(
+        `Instagram returned a non-JSON response at ${url}: ${body}`,
+      )
+    }
+
     // Track CSRF updates
     const rawCookie = resp.headers['set-cookie']
-    const cookieStr = Array.isArray(rawCookie) ? rawCookie.join('; ') : (rawCookie ?? '')
+    const cookieStr = Array.isArray(rawCookie)
+      ? rawCookie.join('; ')
+      : (rawCookie ?? '')
     const csrfCookie = cookieStr
       .split(';')
       .find(c => c.trim().startsWith('csrftoken='))
@@ -371,7 +475,7 @@ export class InstagramRestAPI {
       this.setWwwClaim(String(claim))
     }
 
-    return resp.data
+    return data
   }
 
   /** Pagination engines */
@@ -526,6 +630,8 @@ export class InstagramRestAPI {
     if (v == null || v === '')
       return null
     const n = Number(v)
-    return Number.isFinite(n) ? n : null
+    return Number.isFinite(n)
+      ? n
+      : null
   }
 }

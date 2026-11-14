@@ -18,7 +18,7 @@ import type {
 import { Extractor } from '../core/extractor'
 import { url } from '../message'
 import { findTags, nameExtFromURL } from '../utils/text'
-import { InstagramRestAPI } from './api'
+import { InstagramRestAPI, normalizeUserStrategies } from './api'
 import { parsePostGraphql, parsePostRest } from './parsers'
 
 export interface InstagramExtractorOptions extends ExtractorOptions {
@@ -68,6 +68,9 @@ export abstract class InstagramExtractor extends Extractor {
       csrfToken: this.csrfToken,
       wwwClaim: this.wwwClaim,
       cursor: this.cursor,
+      userStrategies: () => normalizeUserStrategies(
+        this._cfg('user-strategy', ['search', 'web']),
+      ),
     })
   }
 
@@ -121,9 +124,13 @@ export abstract class InstagramExtractor extends Extractor {
       | boolean
       | string[]
     const previewsVid
-      = typeof previews === 'object' ? previews.includes('video') : false
+      = typeof previews === 'object'
+        ? previews.includes('video')
+        : false
     const previewsAud
-      = typeof previews === 'object' ? previews.includes('audio') : false
+      = typeof previews === 'object'
+        ? previews.includes('audio')
+        : false
 
     const audio = this._cfg('audio', false) as boolean
     const maxPosts = this._cfg('max-posts') as number | undefined
@@ -170,9 +177,14 @@ export abstract class InstagramExtractor extends Extractor {
 
       yield { type: 'directory', metadata: parsed as unknown as Metadata }
 
-      const ordered = reverse ? [...files].reverse() : files
+      const ordered = reverse
+        ? [...files].reverse()
+        : files
       for (const file of ordered) {
-        const combined: Record<string, unknown> = { ...parsed, ...file }
+        const combined: Record<string, unknown> = {
+          ...parsed,
+          ...file,
+        }
 
         if (file.audio_url) {
           if (audio) {
