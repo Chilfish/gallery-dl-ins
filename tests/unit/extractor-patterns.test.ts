@@ -140,6 +140,15 @@ describe('instagramStoriesExtractor.pattern', () => {
     expect(groups[2]).toBe('3906328154789100102')
   })
 
+  it('matches direct highlight URL and exposes the highlight id', () => {
+    const url = 'https://www.instagram.com/stories/highlights/18115369870628555/'
+    expect(pattern.test(url)).toBe(true)
+
+    const groups = groupsAfterSlice(pattern, url)
+    expect(groups[0]).toBe('18115369870628555')
+    expect(groups[1]).toBeUndefined()
+  })
+
   it('does NOT match regular post URL', () => {
     expect(pattern.test('https://www.instagram.com/p/ABC/')).toBe(false)
   })
@@ -219,6 +228,12 @@ describe('instagramHighlightsExtractor.pattern', () => {
       'https://www.instagram.com/username/highlights/',
     )
     expect(groups[0]).toBe('/username')
+  })
+
+  it('does NOT match a direct highlight URL under /stories/', () => {
+    expect(
+      pattern.test('https://www.instagram.com/stories/highlights/18115369870628555/'),
+    ).toBe(false)
   })
 
   it('does NOT match post URL', () => {
@@ -348,6 +363,11 @@ describe('cross-extractor non-match matrix', () => {
     {
       desc: '/stories/ with media ID',
       url: 'https://www.instagram.com/stories/user/12345/',
+      shouldMatch: ['Stories'],
+    },
+    {
+      desc: '/stories/highlights/{id}/',
+      url: 'https://www.instagram.com/stories/highlights/18115369870628555/',
       shouldMatch: ['Stories'],
     },
     {

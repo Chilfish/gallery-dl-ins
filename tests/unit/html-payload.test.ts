@@ -45,6 +45,54 @@ describe('extractReelsMediaFromPage', () => {
     expect(reels?.[0]?.items?.[0]?.pk).toBe('4030277734609603578_76727580985')
   })
 
+  it('reads reels_media__connection edges from highlights pages', () => {
+    const html = wrap({
+      require: [
+        [
+          'ScheduledServerJS',
+          'handle',
+          null,
+          [
+            {
+              __bbox: {
+                result: {
+                  data: {
+                    xdt_api__v1__feed__reels_media__connection: {
+                      edges: [
+                        {
+                          node: {
+                            id: 'highlight:18115369870628555',
+                            title: '🌸お花🌸',
+                            items: [
+                              { pk: '3827367937251133646' },
+                            ],
+                          },
+                        },
+                        {
+                          node: {
+                            id: 'highlight:2',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        ],
+      ],
+    })
+
+    const reels = extractReelsMediaFromPage(html)
+    expect(reels?.map(reel => reel.id)).toEqual([
+      'highlight:18115369870628555',
+      'highlight:2',
+    ])
+    expect(reels?.[0]?.title).toBe('🌸お花🌸')
+    expect(reels?.[0]?.items?.[0]?.pk).toBe('3827367937251133646')
+  })
+
   it('returns an empty array when the payload contains no reels', () => {
     const html = wrap({
       require: [

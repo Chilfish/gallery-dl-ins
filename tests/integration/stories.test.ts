@@ -185,6 +185,98 @@ describe('instagramStoriesExtractor integration', () => {
     }
   })
 
+  it('reads a direct highlight URL from the highlight page payload', async () => {
+    const highlightId = '18115369870628555'
+    const url = `https://www.instagram.com/stories/highlights/${highlightId}/`
+
+    const pagePayload = {
+      require: [
+        [
+          'ScheduledServerJS',
+          'handle',
+          null,
+          [
+            {
+              __bbox: {
+                complete: true,
+                result: {
+                  data: {
+                    xdt_api__v1__feed__reels_media__connection: {
+                      edges: [
+                        {
+                          node: {
+                            // Real highlight nodes carry a GraphQL-ish
+                            // __typename but keep the REST reel shape.
+                            __typename: 'XDTReelDict',
+                            id: `highlight:${highlightId}`,
+                            title: '🌸お花🌸',
+                            user: {
+                              pk: '76727580985',
+                              username: 'ritsu_mgmg',
+                              full_name: 'Ritsu',
+                            },
+                            items: [
+                              {
+                                pk: '3827367937251133646',
+                                id: '3827367937251133646_76727580985',
+                                taken_at: 1717000000,
+                                media_type: 1,
+                                image_versions2: {
+                                  candidates: [
+                                    { url: 'https://example.com/highlight.jpg', width: 1080, height: 1920 },
+                                  ],
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        ],
+      ],
+    }
+    const html = `<html><body><script type="application/json" data-sjs>${JSON.stringify(pagePayload)}</script></body></html>`
+
+    // No /api/v1/feed/reels_media/ route: the page payload is the only source.
+    const http = new MockHttpClient()
+      .add(`/stories/highlights/${highlightId}/`, html)
+
+    const match = InstagramStoriesExtractor.pattern.exec(url)!
+    const extractor = new InstagramStoriesExtractor({
+      url,
+      match,
+      config: new ConfigManager(),
+      http,
+      storage: mockStorage,
+      log: noopLogger,
+    })
+
+    await extractor.initialize()
+    const messages: Message[] = []
+    for await (const msg of extractor) {
+      messages.push(msg)
+    }
+
+    const directory = messages.find(m => m.type === 'directory')
+    expect(directory).toBeDefined()
+    if (directory && directory.type === 'directory') {
+      expect(directory.metadata.type).toBe('highlight')
+      expect(directory.metadata.username).toBe('ritsu_mgmg')
+      expect(directory.metadata.highlight_title).toBe('🌸お花🌸')
+    }
+
+    const urls = messages.filter(m => m.type === 'url')
+    expect(urls).toHaveLength(1)
+    if (urls[0] && urls[0].type === 'url') {
+      expect(urls[0].url).toBe('https://example.com/highlight.jpg')
+    }
+  })
+
   it('filters to specific media_id when provided in URL', async () => {
     const storyWithMultipleItems = {
       reels_media: [

@@ -68,6 +68,12 @@ describe('sDK URL resolve', () => {
     ).toBe('stories')
   })
 
+  it('routes /stories/highlights/{id}/ to stories extractor', () => {
+    expect(
+      resolveUrl('https://www.instagram.com/stories/highlights/18115369870628555/'),
+    ).toBe('stories')
+  })
+
   it('routes /highlights/ to highlights extractor', () => {
     expect(
       resolveUrl('https://www.instagram.com/username/highlights/'),
