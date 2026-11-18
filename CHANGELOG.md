@@ -4,6 +4,25 @@
 
 ## Unreleased
 
+## 0.2.6 (2026-11-18)
+
+修复 `/stories/highlights/{id}/` 直链提取失败的问题（#3）。
+
+### 修复
+
+- 精选集直链改为解析页面内嵌数据，REST `reels_media` 不可用时仍能产出目录与逐条媒体。
+- 精选集目录带上 `username` 与 `highlight_title`。
+- 精选集数据不再被当作 GraphQL 帖子解析导致崩溃。
+- `/stories/highlights/{id}/` 稳定归属 stories 提取器。
+
+### 安装
+
+```bash
+npm install @chilfish/gallery-dl-instagram@0.2.6
+```
+
+Closes #3
+
 ## 0.2.5 (2026-11-14)
 
 修复 stories 提取在用户名解析失败或 REST `reels_media` 返回 500 时不可用的问题（#2）。

@@ -1,7 +1,7 @@
 {
   "name": "@chilfish/gallery-dl-instagram",
   "type": "module",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Instagram extraction pipeline — platform-agnostic SDK + CLI",
   "license": "GPL-2.0-only",
   "homepage": "https://github.com/Chilfish/gallery-dl-ins#readme",
