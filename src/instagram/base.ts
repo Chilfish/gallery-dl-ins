@@ -159,12 +159,13 @@ export abstract class InstagramExtractor extends Extractor {
         break
       count++
 
+      // Highlight page payloads carry a ``__typename`` (e.g. ``XDTReelDict``)
+      // but are still REST story shapes identified by ``items``. Only route to
+      // the GraphQL parser when no reel items are present.
+      const postRec = post as unknown as Record<string, unknown>
       const parsed: ParsedPost
-        = '__typename' in (post as unknown as Record<string, unknown>)
-          ? parsePostGraphql(
-              post as unknown as Record<string, unknown>,
-              parserCfg,
-            )
+        = post.items == null && '__typename' in postRec
+          ? parsePostGraphql(postRec, parserCfg)
           : parsePostRest(post, parserCfg)
 
       if (this._user) {

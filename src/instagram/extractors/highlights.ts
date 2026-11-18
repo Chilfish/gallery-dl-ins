@@ -6,7 +6,7 @@ import { register } from './registry'
 
 export class InstagramHighlightsExtractor extends InstagramExtractor {
   static readonly subcategory = 'highlights'
-  static override pattern = re(BASE_RE, /(\/[^/?#]+)\/highlights/)
+  static override pattern = re(BASE_RE, /(\/(?!stories(?:\/|$))[^/?#]+)\/highlights/)
 
   override readonly subcategory = InstagramHighlightsExtractor.subcategory
 
