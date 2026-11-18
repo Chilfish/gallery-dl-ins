@@ -111,6 +111,15 @@
 
 ## 发布记录
 
+### 0.2.6（2026-11-18）
+
+- 修复 `/stories/highlights/{id}/` 直链提取：页面 payload（含 connection 形状）优先，REST 回退；`post.items` 优先分流（#3）
+- 发布提交 `chore(release): v0.2.6`，tag `v0.2.6`；`publish.yml` 全步骤通过
+- 离线门禁：typecheck / lint / 175 tests / build 全绿
+- 真实环境冒烟：issue 中的 highlight 直链产出 1 个 directory 与 12 条 media
+- registry：`latest = 0.2.6`；发布后约 4 分钟处于 `Validating`，随后自动生效；本地 `npm stage list` 因 token 失效无法使用，以 `npm view` 为准
+- GitHub Release v0.2.6 已创建，issue #3 已关闭
+
 ### 0.2.5（2026-11-14）
 
 - 首个 OIDC 发布，用于验证 Trusted Publisher 配置；发布后由 `Pending validation` 转为生效
