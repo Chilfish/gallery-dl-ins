@@ -1,6 +1,6 @@
 # API 参考
 
-> `@chilfish/gallery-dl-instagram` v0.2.4 — 公开导出面（`src/index.ts` + `src/node.ts`）。
+> `@chilfish/gallery-dl-instagram` v0.2.5 — 公开导出面（`src/index.ts` + `src/node.ts`）。
 > 用法示例见 [guide/sdk.md](../guide/sdk.md)；内部实现见 [engineering/architecture.md](../engineering/architecture.md)。
 
 ## 入口
@@ -279,7 +279,7 @@ _updateCursor(cursor: string | null): string | null
 _assignUser(user: InstagramUser): void
 ```
 
-`items()` 的管线：读配置 → 构建 `ParserConfig` → 遍历 `posts()` → 按 `__typename` 选择 REST/GraphQL 解析器 → 产出 `directory` 消息 → 逐文件产出 `url` 消息（音频 / 视频 / 图片，`order-files` 可反转顺序）。
+`items()` 的管线：读配置 → 构建 `ParserConfig` → 遍历 `posts()` → 选择解析器（`post.items` 存在走 REST，否则看 `__typename`）→ 产出 `directory` 消息 → 逐文件产出 `url` 消息（音频 / 视频 / 图片，`order-files` 可反转顺序）。
 
 ### 子提取器
 
@@ -292,7 +292,7 @@ _assignUser(user: InstagramUser): void
 | `InstagramPostsExtractor` | `posts` | `/{username}/posts` | `api.userFeed()` |
 | `InstagramReelsExtractor` | `reels` | `/{username}/reels` | `api.userClips()` |
 | `InstagramTaggedExtractor` | `tagged` | `/{username}/tagged` | `api.userTagged()`（额外产出 `tagged_*` 元数据） |
-| `InstagramStoriesExtractor` | `stories` / `highlights` | `/stories/{user}/`、`/stories/highlights/{id}`、`/aGlnaGxpZ2h0…` | stories 页面内嵌 payload → `api.reelsMedia()` 回退 |
+| `InstagramStoriesExtractor` | `stories` / `highlights` | `/stories/{user}/`、`/stories/highlights/{id}`、`/aGlnaGxpZ2h0…` | 页面内嵌 payload（user: `reels_media`；highlight: `reels_media__connection`）→ `api.reelsMedia()` 回退 |
 | `InstagramHighlightsExtractor` | `highlights` | `/{username}/highlights` | `api.highlightsMedia()` |
 | `InstagramTagExtractor` | `tag` | `/explore/tags/{tag}` | `api.tagsMedia()` |
 | `InstagramInfoExtractor` | `info` | `/{username}/info` | `api.userById()` → 单个 Directory |

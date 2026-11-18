@@ -14,6 +14,7 @@
 | [004](004-queue-dispatch-missing-deps.md) | Queue 分发时子提取器缺少父依赖 | 依赖注入 / 静默失败 | 子 Job 必须继承父的 config/http/storage/log；静默错误必须上报 |
 | [005](005-music-metadata-nesting-mismatch.md) | `MusicMetadata` 类型与真实响应不匹配 | 类型假设 ≠ 真实数据 | `music_info` 是 `MusicSticker` 容器；不要凭直觉包裹类型 |
 | [006](006-stories-user-resolution.md) | stories `User not found` 与 REST `reels_media` 失效 | 错误语义 / 端点退化 | 错误必须保留状态码；HTML 抓取显式 `responseType: 'text'` 并准备多来源退路 |
+| [007](007-highlight-page-payload.md) | highlight 直链只走 REST，页面 payload 形状与 `__typename` 分流失配 | 类型假设 / 端点退化 | 页面 payload 按路由区分形状；分流看 `items` 而不是 `__typename` |
 
 ## 高频雷区（写码前自查）
 
@@ -33,6 +34,8 @@
 - **反爬头缺一即 403**：`X-IG-App-ID` / `X-ASBD-ID` / `X-IG-WWW-Claim` / `X-Requested-With` / `Referer`，统一由 `InstagramRestAPI._call()` 注入。
 - **错误保留状态码与 body 摘要**：`_call()` 按文本读取后自行解析 JSON，非 2xx / 非 JSON 都要抛带上下文的错误；禁止 `catch {}` 后统一 `User not found`。见 [006](006-stories-user-resolution.md)。
 - **HTML 抓取必须 `responseType: 'text'` 且准备多特征**：`profile_id` 会缺席，优先 `page_id":"profilePage_<id>`；stories 数据优先取页面内嵌 `xdt_api__v1__feed__reels_media`。见 [006](006-stories-user-resolution.md)。
+- **同一功能的页面 payload 按路由可能有不同形状**：user stories 是 `reels_media`，highlight 页面是 `reels_media__connection.edges[].node`。补页面解析时按路由分别取样本。见 [007](007-highlight-page-payload.md)。
+- **REST/GraphQL 分流看形状而非单个标记**：`items` 存在即 REST story/reel 形状，`__typename` 可能只是页面附带字段。见 [007](007-highlight-page-payload.md)。
 - **端点退化要留退路**：REST `reels_media` 对网页 session 已返回 500；单一数据源不可靠时用页面 payload / 可配置策略链。
 
 ### 3. 配置与选项

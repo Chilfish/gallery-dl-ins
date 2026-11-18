@@ -148,7 +148,8 @@ items()
   │
   ├─ for await (post of this.posts()) # 子类提供的帖子生成器
   │   │
-  │   ├─ 判断 __typename 存在？ → parsePostGraphql()
+  │   ├─ post.items 存在？      → parsePostRest()   # story / highlight
+  │   ├─ 否则 __typename 存在？ → parsePostGraphql()
   │   │          否则          → parsePostRest()
   │   │
   │   ├─ 合并全局 metadata
@@ -327,9 +328,11 @@ InstagramPostExtractor
     └── api.media(shortcode) → 单个帖子
 
 InstagramStoriesExtractor
-    ├── 先请求 stories 页面，解析内嵌 xdt_api__v1__feed__reels_media
+    ├── user stories: 请求 /stories/{user}/，解析内嵌 xdt_api__v1__feed__reels_media
+    ├── highlight 直链: 请求 /stories/highlights/{id}/，解析
+    │   xdt_api__v1__feed__reels_media__connection.edges[].node
     ├── 页面无 payload → 回退 api.userId + api.reelsMedia([reelId])
-    ├── highlight:XXXX → 直接作为 reel ID
+    ├── highlight:XXXX → 直接作为 reel ID（不回退时）
     ├── --split → 每个 frame 独立产出
     └── --mediaId → 只取出特定 frame
 
