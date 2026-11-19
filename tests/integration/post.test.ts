@@ -69,6 +69,7 @@ describe('instagramPostExtractor integration', () => {
       http,
       storage: mockStorage,
       log: noopLogger,
+      requestInterval: [0, 0],
     })
 
     await extractor.initialize()
@@ -116,6 +117,7 @@ describe('instagramPostExtractor integration', () => {
       http,
       storage: mockStorage,
       log: noopLogger,
+      requestInterval: [0, 0],
     })
 
     await extractor.initialize()

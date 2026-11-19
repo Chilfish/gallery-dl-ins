@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractReelsMediaFromPage } from '../../src/instagram/html-payload'
+import { extractReelsMediaFromPage, extractUserTimelineFromPage } from '../../src/instagram/html-payload'
 
 function wrap(payload: unknown): string {
   return `<html><body>`
@@ -145,5 +145,84 @@ describe('extractReelsMediaFromPage', () => {
     const reels = extractReelsMediaFromPage(html)
     expect(reels).toHaveLength(1)
     expect(reels?.[0]?.id).toBe('1')
+  })
+})
+
+describe('extractUserTimelineFromPage', () => {
+  it('reads profile posts from the timeline connection edges', () => {
+    const html = wrap({
+      require: [
+        [
+          'ScheduledServerJS',
+          'handle',
+          null,
+          [
+            {
+              __bbox: {
+                result: {
+                  data: {
+                    xdt_api__v1__feed__user_timeline_graphql_connection: {
+                      edges: [
+                        {
+                          node: {
+                            pk: '111',
+                            code: 'aaa',
+                            user: { pk: '9', username: 'u' },
+                          },
+                        },
+                        {
+                          node: {
+                            pk: '222',
+                            code: 'bbb',
+                            user: { pk: '9', username: 'u' },
+                          },
+                        },
+                      ],
+                      page_info: { has_next_page: true, end_cursor: 'next' },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        ],
+      ],
+    })
+
+    const posts = extractUserTimelineFromPage(html)
+    expect(posts?.map(post => post.pk)).toEqual(['111', '222'])
+  })
+
+  it('reads profile_grid_items when present', () => {
+    const html = wrap({
+      require: [
+        [
+          'ScheduledServerJS',
+          'handle',
+          null,
+          [
+            {
+              __bbox: {
+                result: {
+                  data: {
+                    profile_grid_items: [
+                      { pk: 'grid-1' },
+                      { pk: 'grid-2' },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        ],
+      ],
+    })
+
+    expect(extractUserTimelineFromPage(html)?.map(post => post.pk))
+      .toEqual(['grid-1', 'grid-2'])
+  })
+
+  it('returns null for the logged-in SSR-disabled shell', () => {
+    expect(extractUserTimelineFromPage('<html><body>Instagram</body></html>')).toBeNull()
   })
 })

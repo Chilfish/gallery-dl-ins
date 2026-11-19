@@ -84,6 +84,7 @@ describe('instagramStoriesExtractor integration', () => {
       http,
       storage: mockStorage,
       log: noopLogger,
+      requestInterval: [0, 0],
     })
 
     await extractor.initialize()
@@ -163,6 +164,7 @@ describe('instagramStoriesExtractor integration', () => {
       http,
       storage: mockStorage,
       log: noopLogger,
+      requestInterval: [0, 0],
     })
 
     await extractor.initialize()
@@ -254,6 +256,7 @@ describe('instagramStoriesExtractor integration', () => {
       http,
       storage: mockStorage,
       log: noopLogger,
+      requestInterval: [0, 0],
     })
 
     await extractor.initialize()
@@ -335,6 +338,7 @@ describe('instagramStoriesExtractor integration', () => {
       http,
       storage: mockStorage,
       log: noopLogger,
+      requestInterval: [0, 0],
     })
 
     await extractor.initialize()
@@ -370,6 +374,7 @@ describe('instagramStoriesExtractor integration', () => {
       http,
       storage: mockStorage,
       log: noopLogger,
+      requestInterval: [0, 0],
     })
 
     await extractor.initialize()
