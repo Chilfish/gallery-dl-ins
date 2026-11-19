@@ -36,7 +36,7 @@ export function addSharedOptions(cmd: Command): Command {
     .option('--order-files <order>', 'File ordering: r, d (reverse), or empty for natural order')
     .option('--static-videos', 'Download static video cover images instead of actual videos', false)
     .option('--no-static-videos', 'Do not force static video covers')
-    .option('--api <backend>', 'API backend: rest (default) or graphql', 'rest')
+    .option('--api <backend>', 'API backend: auto (default), rest, or graphql', 'auto')
     .option('-v, --verbose', 'Verbose debug output', false)
     .option('--include <list>', 'For user: comma-separated sub-extractors (posts,reels,tagged,stories,highlights,info,avatar)', 'posts')
     .option('--split', 'For stories: split each frame into a separate post', false)

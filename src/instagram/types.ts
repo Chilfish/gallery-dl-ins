@@ -27,6 +27,12 @@ export interface InstagramUser {
   edge_media_collections?: { count: number }
   followed_by_viewer?: boolean
   is_verified?: boolean
+  /** Flat counters returned by the doc_id profile query. */
+  follower_count?: number
+  following_count?: number
+  media_count?: number
+  biography?: string
+  external_url?: string
 }
 
 export interface ImageCandidate {

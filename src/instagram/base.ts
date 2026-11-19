@@ -21,18 +21,29 @@ import { findTags, nameExtFromURL } from '../utils/text'
 import { InstagramRestAPI, normalizeUserStrategies } from './api'
 import { parsePostGraphql, parsePostRest } from './parsers'
 
-export interface InstagramExtractorOptions extends ExtractorOptions {
-  sessionId?: string
-  cookies?: Record<string, string>
-  /** Pre-seeded CSRF token (from anonymous session cookie jar). */
-  csrfToken?: string
-}
-
 export class Ref<T> {
   value: T
   constructor(v: T) {
     this.value = v
   }
+}
+
+/** Refs shared between a parent extractor and its queue children. */
+export interface InstagramExtractorState {
+  csrfToken?: Ref<string>
+  wwwClaim?: Ref<string>
+  lsdToken?: Ref<string>
+}
+
+export interface InstagramExtractorOptions extends ExtractorOptions {
+  sessionId?: string
+  cookies?: Record<string, string>
+  /** Pre-seeded CSRF token (from anonymous session cookie jar). */
+  csrfToken?: string
+  /** Pre-seeded GraphQL ``lsd`` token (shared across queue children). */
+  lsdToken?: string
+  /** Shared refs so queue children reuse the parent's session tokens. */
+  state?: InstagramExtractorState
 }
 
 export abstract class InstagramExtractor extends Extractor {
@@ -42,6 +53,7 @@ export abstract class InstagramExtractor extends Extractor {
   api!: InstagramRestAPI
   csrfToken: Ref<string> = new Ref('')
   wwwClaim: Ref<string> = new Ref('0')
+  lsdToken: Ref<string> = new Ref('')
   cursor: Ref<string | null> = new Ref(null)
 
   protected _loggedIn = true
@@ -49,28 +61,44 @@ export abstract class InstagramExtractor extends Extractor {
 
   private readonly _findTags = findTags
   private readonly _csrfSeed: string | undefined
+  private readonly _lsdSeed: string | undefined
 
   constructor(opts: InstagramExtractorOptions) {
     super(opts)
     this._csrfSeed = opts.csrfToken
+    this._lsdSeed = opts.lsdToken
+
+    if (opts.state?.csrfToken)
+      this.csrfToken = opts.state.csrfToken
+    if (opts.state?.wwwClaim)
+      this.wwwClaim = opts.state.wwwClaim
+    if (opts.state?.lsdToken)
+      this.lsdToken = opts.state.lsdToken
   }
 
   /** Initialization */
 
   protected override async _init(): Promise<void> {
-    // Use pre-seeded CSRF token if available (from anonymous cookie jar),
-    // otherwise generate a random one for sessionid-based auth.
-    this.csrfToken.value = this._csrfSeed || Extractor.generateToken(16)
+    // Reuse the session token from a parent extractor, else a pre-seeded one,
+    // else generate a random token for sessionid-based auth.
+    if (!this.csrfToken.value)
+      this.csrfToken.value = this._csrfSeed || Extractor.generateToken(16)
+    if (!this.lsdToken.value)
+      this.lsdToken.value = this._lsdSeed ?? ''
 
     this.api = new InstagramRestAPI({
       http: this.http,
       root: this.root,
       csrfToken: this.csrfToken,
       wwwClaim: this.wwwClaim,
+      lsdToken: this.lsdToken,
       cursor: this.cursor,
+      request: (url, cfg) => this.request(url, cfg),
+      apiBackend: () => String(this._cfg('api', 'auto')),
       userStrategies: () => normalizeUserStrategies(
-        this._cfg('user-strategy', ['search', 'web']),
+        this._cfg('user-strategy', ['web', 'info']),
       ),
+      log: this.log,
     })
   }
 
@@ -159,14 +187,15 @@ export abstract class InstagramExtractor extends Extractor {
         break
       count++
 
-      // Highlight page payloads carry a ``__typename`` (e.g. ``XDTReelDict``)
-      // but are still REST story shapes identified by ``items``. Only route to
-      // the GraphQL parser when no reel items are present.
+      // Route by shape, not by ``__typename``: doc_id GraphQL media nodes carry
+      // ``__typename`` but keep the REST shape (``user`` + ``image_versions2``).
       const postRec = post as unknown as Record<string, unknown>
-      const parsed: ParsedPost
-        = post.items == null && '__typename' in postRec
-          ? parsePostGraphql(postRec, parserCfg)
-          : parsePostRest(post, parserCfg)
+      const isRestShape
+        = post.items != null
+          || (postRec.image_versions2 != null && postRec.user != null)
+      const parsed: ParsedPost = isRestShape
+        ? parsePostRest(post, parserCfg)
+        : parsePostGraphql(postRec, parserCfg)
 
       if (this._user) {
         (parsed as unknown as Record<string, unknown>).user = this._user

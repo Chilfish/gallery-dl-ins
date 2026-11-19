@@ -3,19 +3,100 @@
  *
  * All endpoint methods return ``AsyncGenerator`` for paginated lists or
  * plain values for single-item endpoints.
+ *
+ * Instagram retired most of the web REST feed endpoints (``/v1/feed/user``,
+ * ``/v1/clips/user``, ``/v1/usertags`` …). The primary data path is now the
+ * Relay ``doc_id`` GraphQL endpoint; REST is kept as a fallback.
  */
 
-import type { HttpClient, HttpResponse } from '../types'
+import type { Logger } from '../core/extractor'
+import type { HttpClient, HttpResponse, RequestConfig } from '../types'
 import type {
   InstagramPost,
   InstagramUser,
 } from './types'
 import { idFromShortcode } from '../utils/id-codec'
+import { extractUserTimelineFromPage } from './html-payload'
 
 const APP_ID = '936619743392459'
 const ASBD_ID = '129477'
 
-const DEFAULT_USER_STRATEGIES = ['search', 'web']
+const DEFAULT_USER_STRATEGIES = ['web', 'info']
+
+/** GraphQL hosts, in fallback order. ``i.instagram.com`` is the reliable one. */
+const GRAPHQL_HOSTS = [
+  'https://i.instagram.com/api/graphql',
+  'https://www.instagram.com/api/graphql',
+]
+
+/**
+ * Relay operation ids. These rotate with Instagram's web build — refresh them
+ * from the JS bundles (see docs/postmortem/008-rest-feed-deprecation.md).
+ */
+const DOC_IDS = {
+  profile: '28036671149327607',
+  posts: '27014165781614298',
+  tagged: '29179217291735675',
+  reels: '28280418711631396',
+} as const
+
+const PROVIDED_PROFILE = {
+  __relay_internal__pv__PolarisCannesGuardianExperienceEnabledrelayprovider: true,
+  __relay_internal__pv__PolarisCASB976ProfileEnabledrelayprovider: false,
+  __relay_internal__pv__PolarisProfileInformTreatmentBannerEnabledrelayprovider: false,
+  __relay_internal__pv__PolarisWebSchoolsEnabledrelayprovider: false,
+  __relay_internal__pv__PolarisProfileRingsGradientEnabledrelayprovider: false,
+  __relay_internal__pv__PolarisRepostsConsumptionEnabledrelayprovider: false,
+  __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: false,
+} as const
+
+const PROVIDED_POSTS = {
+  __relay_internal__pv__PolarisMultiCaptionCarouselEnabledrelayprovider: false,
+  __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: false,
+  __relay_internal__pv__PolarisSEOIsCrawlerrelayprovider: false,
+  __relay_internal__pv__PolarisThreadsStyleCommentsEnabledrelayprovider: false,
+  __relay_internal__pv__PolarisReelsRecoDebugOverlayEnabledrelayprovider: false,
+} as const
+
+const PROVIDED_TAGGED = {
+  __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: false,
+  __relay_internal__pv__PolarisSEOIsCrawlerrelayprovider: false,
+} as const
+
+const PROVIDED_REELS = {
+  __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: false,
+} as const
+
+const DOCUMENT_HEADERS: Record<string, string> = {
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.5',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1',
+}
+
+type JsonRecord = Record<string, unknown>
+
+/** Narrow an unknown value to a plain object (arrays excluded). */
+function asRecord(value: unknown): JsonRecord | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as JsonRecord
+    : null
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value)
+    ? value
+    : []
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error
+    ? err.message
+    : String(err)
+}
 
 /** Human-readable snippet of an HTML/JSON response body for error messages. */
 function bodySummary(text: string, limit = 200): string {
@@ -30,6 +111,19 @@ function bodySummary(text: string, limit = 200): string {
     : collapsed
 }
 
+/** Detect Instagram soft-rejection pages served with a 2xx status. */
+function classifyShell(body: string): string | null {
+  if (body.includes('not-logged-in'))
+    return 'returned the logged-out page (not-logged-in) — sessionid is missing or expired'
+  if (body.includes('challenge_required') || body.includes('/challenge/'))
+    return 'requires a challenge — the account is flagged, resolve it in a browser first'
+  if (body.includes('feedback_required'))
+    return 'requires feedback — Instagram is rate-limiting this session'
+  if (body.includes('/accounts/login/'))
+    return 'redirected to the login page — sessionid is missing or expired'
+  return null
+}
+
 /** Normalize a ``user-strategy`` config value into a list. */
 export function normalizeUserStrategies(
   value: unknown,
@@ -41,14 +135,34 @@ export function normalizeUserStrategies(
   return DEFAULT_USER_STRATEGIES
 }
 
+interface CallOptions {
+  params?: Record<string, unknown>
+  method?: string
+  data?: Record<string, unknown>
+  form?: Record<string, unknown>
+  headers?: Record<string, string>
+}
+
+interface GraphqlPaginationOptions {
+  docId: string
+  friendlyName: string
+  variables: (after: string | null) => JsonRecord
+  connection: (data: JsonRecord) => JsonRecord | null
+  node?: (edge: JsonRecord) => JsonRecord | null
+}
+
 export class InstagramRestAPI {
   private readonly http: HttpClient
   private readonly root: string
+  private readonly request: (url: string, cfg?: RequestConfig) => Promise<HttpResponse<unknown>>
   private readonly getCsrf: () => string
   private readonly getWwwClaim: () => string
   private readonly setWwwClaim: (v: string) => void
   private readonly setCsrf: (v: string) => void
   private readonly getUserStrategies: () => string[]
+  private readonly getApiBackend: () => string
+  private readonly lsdToken: { value: string }
+  private readonly log?: Logger
 
   /** A ref to the extractor's cursor. */
   private getCursor: () => string | null
@@ -60,11 +174,22 @@ export class InstagramRestAPI {
     csrfToken: { value: string }
     wwwClaim: { value: string }
     cursor: { value: string | null }
+    /** Throttled request wrapper from the owning extractor. */
+    request?: (url: string, cfg?: RequestConfig) => Promise<HttpResponse<unknown>>
+    /** Shared ``lsd`` token used by the doc_id GraphQL endpoint. */
+    lsdToken?: { value: string }
     userStrategies?: () => string[]
+    apiBackend?: () => string
+    log?: Logger
   }) {
     this.http = opts.http
     this.root = opts.root
+    this.request = opts.request
+      ?? ((url, cfg) => this.http.request({ url, ...cfg }))
     this.getUserStrategies = opts.userStrategies ?? (() => DEFAULT_USER_STRATEGIES)
+    this.getApiBackend = opts.apiBackend ?? (() => 'auto')
+    this.lsdToken = opts.lsdToken ?? { value: '' }
+    this.log = opts.log
 
     this.getCsrf = () => opts.csrfToken.value
     this.setCsrf = (v) => {
@@ -94,25 +219,155 @@ export class InstagramRestAPI {
     yield* this._pagination(endpoint)
   }
 
-  /** Paginated user feed. */
-  userFeed(userId: string): AsyncGenerator<InstagramPost> {
-    return this._pagination(`/v1/feed/user/${userId}/`, { count: 30 })
-  }
+  /**
+   * Paginated user feed.
+   *
+   * GraphQL (doc_id) is the primary path because the REST endpoint has been
+   * retired. ``username`` is required for the doc_id query; when omitted it is
+   * resolved through ``userById``.
+   */
+  async* userFeed(userId: string, username?: string): AsyncGenerator<InstagramPost> {
+    const errors: string[] = []
+    const preferRest = this.getApiBackend() === 'rest'
 
-  /** Paginated user reels (POST endpoint). */
-  userClips(userId: string): AsyncGenerator<InstagramPost> {
-    const data: Record<string, unknown> = {
-      target_user_id: userId,
-      page_size: '50',
-      max_id: null,
-      include_feed_video: 'true',
+    if (!username) {
+      try {
+        username = (await this.userById(userId)).username
+      }
+      catch (err) {
+        errors.push(`username: ${errorMessage(err)}`)
+      }
     }
-    return this._paginationPost('/v1/clips/user/', data)
+
+    if (preferRest) {
+      try {
+        yield* this._pagination(`/v1/feed/user/${userId}/`, { count: 30 })
+        return
+      }
+      catch (err) {
+        errors.push(`REST: ${errorMessage(err)}`)
+        this.log?.warn(`REST user feed failed for ${username ?? userId}: ${errorMessage(err)}`)
+      }
+    }
+
+    if (username) {
+      try {
+        yield* this._graphqlUserPosts(username)
+        return
+      }
+      catch (err) {
+        errors.push(`GraphQL: ${errorMessage(err)}`)
+        this.log?.warn(`GraphQL user feed failed for @${username}: ${errorMessage(err)}`)
+      }
+    }
+
+    if (!preferRest) {
+      try {
+        yield* this._pagination(`/v1/feed/user/${userId}/`, { count: 30 })
+        return
+      }
+      catch (err) {
+        errors.push(`REST: ${errorMessage(err)}`)
+        this.log?.warn(`REST user feed failed for @${username ?? userId}: ${errorMessage(err)}`)
+      }
+    }
+
+    if (username) {
+      try {
+        const posts = await this._userTimelineFromPage(username)
+        if (posts) {
+          yield* posts
+          return
+        }
+        errors.push('page payload: no embedded timeline')
+      }
+      catch (err) {
+        errors.push(`page payload: ${errorMessage(err)}`)
+      }
+    }
+
+    throw new Error(
+      `User feed unavailable for ${username ?? userId}: ${errors.join('; ')}`,
+    )
   }
 
-  /** Paginated tagged posts. */
-  userTagged(userId: string): AsyncGenerator<InstagramPost> {
-    return this._pagination(`/v1/usertags/${userId}/feed/`, { count: 20 })
+  /** Paginated user reels. GraphQL (doc_id) first, REST POST fallback. */
+  async* userClips(userId: string, username?: string): AsyncGenerator<InstagramPost> {
+    const errors: string[] = []
+    const preferRest = this.getApiBackend() === 'rest'
+
+    if (!preferRest) {
+      try {
+        yield* this._graphqlUserClips(userId, username)
+        return
+      }
+      catch (err) {
+        errors.push(`GraphQL: ${errorMessage(err)}`)
+        this.log?.warn(`GraphQL reels failed for ${userId}: ${errorMessage(err)}`)
+      }
+    }
+
+    try {
+      yield* this._paginationPost('/v1/clips/user/', {
+        target_user_id: userId,
+        page_size: '50',
+        max_id: null,
+        include_feed_video: 'true',
+      })
+      return
+    }
+    catch (err) {
+      errors.push(`REST: ${errorMessage(err)}`)
+    }
+
+    if (preferRest) {
+      try {
+        yield* this._graphqlUserClips(userId, username)
+        return
+      }
+      catch (err) {
+        errors.push(`GraphQL: ${errorMessage(err)}`)
+      }
+    }
+
+    throw new Error(`User reels unavailable for ${userId}: ${errors.join('; ')}`)
+  }
+
+  /** Paginated tagged posts. GraphQL (doc_id) first, REST fallback. */
+  async* userTagged(userId: string): AsyncGenerator<InstagramPost> {
+    const errors: string[] = []
+    const preferRest = this.getApiBackend() === 'rest'
+
+    if (!preferRest) {
+      try {
+        yield* this._graphqlUserTagged(userId)
+        return
+      }
+      catch (err) {
+        errors.push(`GraphQL: ${errorMessage(err)}`)
+        this.log?.warn(`GraphQL tagged feed failed for ${userId}: ${errorMessage(err)}`)
+      }
+    }
+
+    try {
+      yield* this._pagination(`/v1/usertags/${userId}/feed/`, { count: 20 })
+      return
+    }
+    catch (err) {
+      errors.push(`REST: ${errorMessage(err)}`)
+    }
+
+    if (preferRest) {
+      try {
+        yield* this._graphqlUserTagged(userId)
+        return
+      }
+      catch (err) {
+        errors.push(`GraphQL: ${errorMessage(err)}`)
+      }
+    }
+
+    throw new Error(`User tagged feed unavailable for ${userId}: ${errors.join('; ')}`)
   }
 
   /** Paginated saved posts (media wrapper). */
@@ -204,13 +459,46 @@ export class InstagramRestAPI {
     yield* this._paginationSections(`/v1/tags/${tag}/sections/`, data)
   }
 
-  /** User by numeric ID. */
+  /**
+   * User by numeric ID.
+   *
+   * GraphQL profile lookup first (REST ``/v1/users/{id}/info/`` is now
+   * unreliable), with REST as a fallback.
+   */
   async userById(userId: string): Promise<InstagramUser> {
-    const data = await this._call(`/v1/users/${userId}/info/`)
-    const user = (data as Record<string, unknown> | null)?.user
-    if (user && typeof user === 'object')
-      return user as InstagramUser
-    throw new Error(`userById: response contained no user for id ${userId}`)
+    const errors: string[] = []
+    const preferRest = this.getApiBackend() === 'rest'
+
+    if (!preferRest) {
+      try {
+        return await this._graphqlUserProfile(userId)
+      }
+      catch (err) {
+        errors.push(`GraphQL: ${errorMessage(err)}`)
+      }
+    }
+
+    try {
+      const data = await this._call(`/v1/users/${userId}/info/`)
+      const user = (data as Record<string, unknown> | null)?.user
+      if (user && typeof user === 'object')
+        return user as InstagramUser
+      throw new Error('response contained no user')
+    }
+    catch (err) {
+      errors.push(`REST: ${errorMessage(err)}`)
+    }
+
+    if (preferRest) {
+      try {
+        return await this._graphqlUserProfile(userId)
+      }
+      catch (err) {
+        errors.push(`GraphQL: ${errorMessage(err)}`)
+      }
+    }
+
+    throw new Error(`userById failed for ${userId}: ${errors.join('; ')}`)
   }
 
   /** User by username (web_profile_info). */
@@ -248,21 +536,10 @@ export class InstagramRestAPI {
 
   /** Scrape user ID from HTML profile page. */
   async userByWeb(username: string): Promise<{ id: string }> {
-    const resp = await this.http.request({
+    const resp = await this._request({
       url: `https://www.instagram.com/${username}`,
       responseType: 'text',
-      headers: {
-        'Accept':
-          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br, zstd',
-        'Alt-Used': 'www.instagram.com',
-        'Connection': 'keep-alive',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Priority': 'u=0, i',
-      },
+      headers: DOCUMENT_HEADERS,
     })
     if (resp.status < 200 || resp.status >= 300)
       throw new Error(`userByWeb: profile page returned status ${resp.status}`)
@@ -275,6 +552,8 @@ export class InstagramRestAPI {
     const patterns = [
       /"page_id":"profilePage_(\d+)"/,
       /"profile_id":"(\d+)"/,
+      /"props":\{"id":"(\d+)"/,
+      /"user_id":"(\d+)"/,
     ]
     for (const pattern of patterns) {
       const match = pattern.exec(text)
@@ -300,11 +579,23 @@ export class InstagramRestAPI {
           return await this.userByName(screenName)
         if (strategy === 'web') {
           const result = await this.userByWeb(screenName)
-          return {
-            pk: result.id,
-            id: result.id,
-            username: screenName,
-            full_name: '',
+          // The page only yields the numeric id — enrich through the GraphQL
+          // profile query so avatar/info extractors get a full user object.
+          try {
+            const user = await this.userById(result.id)
+            return {
+              ...user,
+              pk: user.pk ?? result.id,
+              id: user.id ?? result.id,
+            }
+          }
+          catch {
+            return {
+              pk: result.id,
+              id: result.id,
+              username: screenName,
+              full_name: '',
+            }
           }
         }
         reasons.push(`${strategy}: unknown strategy`)
@@ -359,15 +650,248 @@ export class InstagramRestAPI {
     )
   }
 
+  /** GraphQL user feed */
+
+  private async* _graphqlUserPosts(username: string): AsyncGenerator<InstagramPost> {
+    yield* this._graphqlPagination({
+      docId: DOC_IDS.posts,
+      friendlyName: 'PolarisProfilePostsQuery',
+      variables: after => ({
+        after,
+        before: null,
+        data: {
+          count: 33,
+          include_reel_media_seen_timestamp: true,
+          include_relationship_info: true,
+          latest_besties_reel_media: true,
+          latest_reel_media: true,
+        },
+        username,
+        ...PROVIDED_POSTS,
+      }),
+      connection: data => asRecord(data.xdt_api__v1__feed__user_timeline_graphql_connection),
+    })
+  }
+
+  private async* _graphqlUserTagged(userId: string): AsyncGenerator<InstagramPost> {
+    yield* this._graphqlPagination({
+      docId: DOC_IDS.tagged,
+      friendlyName: 'PolarisProfileTaggedTabContentQuery',
+      variables: after => ({
+        after,
+        before: null,
+        count: 30,
+        first: null,
+        last: null,
+        user_id: userId,
+        ...PROVIDED_TAGGED,
+      }),
+      connection: data => asRecord(data.xdt_api__v1__usertags__user_id__feed_connection),
+    })
+  }
+
+  private async* _graphqlUserClips(userId: string, username?: string): AsyncGenerator<InstagramPost> {
+    yield* this._graphqlPagination({
+      docId: DOC_IDS.reels,
+      friendlyName: 'PolarisProfileReelsTabContentQuery',
+      variables: after => ({
+        after,
+        data: { count: 12 },
+        first: 12,
+        user_id: userId,
+        ...PROVIDED_REELS,
+      }),
+      connection: (data) => {
+        const user = asRecord(data.fetch__XDTUserDict)
+        return asRecord(user?.clips_connection)
+      },
+      node: (edge) => {
+        const media = asRecord(asRecord(edge.node)?.media)
+        if (!media)
+          return null
+        // The reels query only selects ``user.pk`` — fill in the known
+        // username so directory naming and metadata stay correct.
+        const user = asRecord(media.user) ?? {}
+        if (!user.pk)
+          user.pk = userId
+        if (username) {
+          user.username = user.username ?? username
+          user.full_name = user.full_name ?? ''
+        }
+        media.user = user
+        return media
+      },
+    })
+  }
+
+  private async _graphqlUserProfile(userId: string): Promise<InstagramUser> {
+    const data = await this._graphql(
+      DOC_IDS.profile,
+      'PolarisProfilePageContentQuery',
+      {
+        enable_integrity_filters: true,
+        id: userId,
+        render_surface: 'PROFILE',
+        ...PROVIDED_PROFILE,
+      },
+    )
+    const user = asRecord(data.user)
+    if (!user)
+      throw new Error(`GraphQL profile response contained no user for id ${userId}`)
+    return user as unknown as InstagramUser
+  }
+
+  private async* _graphqlPagination(
+    opts: GraphqlPaginationOptions,
+  ): AsyncGenerator<InstagramPost> {
+    let after: string | null = this.getCursor()
+    let pages = 0
+
+    while (true) {
+      const data = await this._graphql(
+        opts.docId,
+        opts.friendlyName,
+        opts.variables(after),
+      )
+
+      const connection = opts.connection(data)
+      if (!connection)
+        throw new Error(`${opts.friendlyName} response contained no connection`)
+
+      const edges = asArray(connection.edges)
+        .map(edge => asRecord(edge))
+        .filter((edge): edge is JsonRecord => edge !== null)
+
+      for (const edge of edges) {
+        const node = opts.node
+          ? opts.node(edge)
+          : asRecord(edge.node)
+        if (node)
+          yield node as unknown as InstagramPost
+      }
+
+      const pageInfo = asRecord(connection.page_info)
+      const next = typeof pageInfo?.end_cursor === 'string'
+        ? pageInfo.end_cursor
+        : null
+      const hasNext = pageInfo?.has_next_page === true
+
+      if (!hasNext || !next || next === after || ++pages > 200) {
+        this.setCursor(null)
+        return
+      }
+      after = this.setCursor(next)
+    }
+  }
+
+  /** Acquire the ``lsd`` token required by the doc_id GraphQL endpoint. */
+  private async _ensureLsd(): Promise<string> {
+    if (this.lsdToken.value)
+      return this.lsdToken.value
+
+    const resp = await this._request({
+      url: `${this.root}/`,
+      responseType: 'text',
+      headers: DOCUMENT_HEADERS,
+    })
+    if (resp.status < 200 || resp.status >= 300)
+      throw new Error(`Could not load instagram.com for lsd token (status ${resp.status})`)
+
+    const html = typeof resp.data === 'string'
+      ? resp.data
+      : ''
+    const lsd = /"LSD",\[\],\{"token":"([^"]+)"/.exec(html)?.[1]
+    if (!lsd) {
+      throw new Error(
+        'Could not extract the lsd token from instagram.com — '
+        + 'sessionid may be missing/expired, or Instagram changed the page payload.',
+      )
+    }
+
+    this.lsdToken.value = lsd
+    return lsd
+  }
+
+  private async _graphql(
+    docId: string,
+    friendlyName: string,
+    variables: JsonRecord,
+  ): Promise<JsonRecord> {
+    const lsd = await this._ensureLsd()
+    const errors: string[] = []
+
+    for (const host of GRAPHQL_HOSTS) {
+      try {
+        const payload = asRecord(await this._call(host, {
+          method: 'POST',
+          form: {
+            doc_id: docId,
+            variables: JSON.stringify(variables),
+            lsd,
+            server_timestamps: 'true',
+            fb_api_caller_class: 'RelayModern',
+            fb_api_req_friendly_name: friendlyName,
+          },
+          headers: {
+            'X-FB-LSD': lsd,
+            'X-FB-Friendly-Name': friendlyName,
+          },
+        }))
+
+        if (!payload)
+          throw new Error('empty GraphQL response')
+
+        const gqlErrors = asArray(payload.errors)
+          .map(err => asRecord(err))
+          .filter((err): err is JsonRecord => err !== null)
+        if (gqlErrors.length > 0) {
+          const messages = gqlErrors
+            .map(err => `${String(err.message ?? 'unknown error')}${err.code != null
+              ? ` (code ${String(err.code)})`
+              : ''}`)
+          throw new Error(messages.join('; '))
+        }
+
+        const data = asRecord(payload.data)
+        if (!data)
+          throw new Error('GraphQL response contained no data')
+        return data
+      }
+      catch (err) {
+        errors.push(`${new URL(host).host}: ${errorMessage(err)}`)
+      }
+    }
+
+    throw new Error(
+      `GraphQL ${friendlyName} failed (${errors.join('; ')}) — doc_id may be outdated`,
+    )
+  }
+
+  /** HTML page payload fallback for the user timeline. */
+  private async _userTimelineFromPage(username: string): Promise<InstagramPost[] | null> {
+    const resp = await this._request({
+      url: `${this.root}/${encodeURIComponent(username)}/`,
+      responseType: 'text',
+      headers: DOCUMENT_HEADERS,
+    })
+    if (resp.status < 200 || resp.status >= 300)
+      throw new Error(`profile page returned status ${resp.status}`)
+
+    const html = typeof resp.data === 'string'
+      ? resp.data
+      : ''
+    return extractUserTimelineFromPage(html)
+  }
+
   /** Internal — HTTP call */
+
+  private async _request(cfg: RequestConfig & { url: string }): Promise<HttpResponse<unknown>> {
+    return this.request(cfg.url, cfg)
+  }
 
   private async _call(
     endpoint: string,
-    opts: {
-      params?: Record<string, unknown>
-      method?: string
-      data?: Record<string, unknown>
-    } = {},
+    opts: CallOptions = {},
   ): Promise<unknown> {
     const url = endpoint.startsWith('/')
       ? `https://www.instagram.com/api${endpoint}`
@@ -376,8 +900,6 @@ export class InstagramRestAPI {
     const csrf = this.getCsrf()
     const headers: Record<string, string> = {
       'Accept': '*/*',
-      'Cookie': `csrftoken=${csrf}`,
-      'X-CSRFToken': csrf,
       'X-IG-App-ID': APP_ID,
       'X-ASBD-ID': ASBD_ID,
       'X-IG-WWW-Claim': this.getWwwClaim(),
@@ -387,9 +909,25 @@ export class InstagramRestAPI {
       'Sec-Fetch-Dest': 'empty',
       'Sec-Fetch-Mode': 'cors',
       'Sec-Fetch-Site': 'same-origin',
+      ...opts.headers,
+    }
+    if (csrf) {
+      headers.Cookie = `csrftoken=${csrf}`
+      headers['X-CSRFToken'] = csrf
     }
 
-    const resp: HttpResponse<unknown> = await this.http.request({
+    let data: unknown = opts.data
+    if (opts.form) {
+      const params = new URLSearchParams()
+      for (const [key, value] of Object.entries(opts.form)) {
+        if (value != null)
+          params.set(key, String(value))
+      }
+      data = params
+      headers['Content-Type'] = 'application/x-www-form-urlencoded'
+    }
+
+    const resp = await this._request({
       url,
       method: opts.method ?? 'GET',
       headers,
@@ -400,7 +938,7 @@ export class InstagramRestAPI {
             ) as [string, string][],
           )
         : undefined,
-      data: opts.data,
+      data,
       responseType: 'text',
     })
 
@@ -423,18 +961,36 @@ export class InstagramRestAPI {
     // Decode the body ourselves so non-2xx / HTML responses keep their status
     // and a readable snippet instead of surfacing as a bare JSON SyntaxError.
     const raw = resp.data
-    let data: unknown = raw
+    let dataOut: unknown = raw
     let parseFailed = false
     if (typeof raw === 'string') {
       try {
-        data = raw
+        dataOut = raw
           ? JSON.parse(raw)
           : null
       }
       catch {
-        data = null
+        dataOut = null
         parseFailed = true
       }
+    }
+
+    if (parseFailed) {
+      const body = typeof raw === 'string'
+        ? raw
+        : ''
+      const shell = classifyShell(body)
+      if (resp.status >= 200 && resp.status < 300) {
+        throw new Error(
+          `Instagram ${shell ?? 'returned a non-JSON response'} at ${url}: ${bodySummary(body)}`,
+        )
+      }
+      throw new Error(
+        `Instagram API error ${resp.status} at ${url}: ${bodySummary(body)}${
+          shell
+            ? ` (${shell})`
+            : ''}`,
+      )
     }
 
     if (resp.status < 200 || resp.status >= 300) {
@@ -446,12 +1002,13 @@ export class InstagramRestAPI {
       )
     }
 
-    if (parseFailed) {
-      const body = typeof raw === 'string'
-        ? bodySummary(raw)
-        : ''
+    const payload = asRecord(dataOut)
+    if (payload && payload.status === 'fail' && typeof payload.message === 'string') {
       throw new Error(
-        `Instagram returned a non-JSON response at ${url}: ${body}`,
+        `Instagram API error at ${url}: ${payload.message}${
+          payload.status_code != null
+            ? ` (status_code=${String(payload.status_code)})`
+            : ''}`,
       )
     }
 
@@ -475,7 +1032,7 @@ export class InstagramRestAPI {
       this.setWwwClaim(String(claim))
     }
 
-    return data
+    return dataOut
   }
 
   /** Pagination engines */
@@ -492,29 +1049,34 @@ export class InstagramRestAPI {
       reqParams.max_id = maxId
       const data = (await this._call(endpoint, { params: reqParams })) as Record<string, unknown>
 
-      if (data) {
-        const items = data.items as Array<Record<string, unknown>> | undefined
-        if (items) {
-          for (const item of items) {
-            if (media) {
-              yield (item.media ?? item) as InstagramPost
-            }
-            else {
-              yield item as unknown as InstagramPost
-            }
-          }
-        }
-
-        if (!data.more_available) {
-          this.setCursor(null)
-          return
-        }
-        maxId = this.setCursor(data.next_max_id as string | null)
-      }
-      else {
+      if (!data) {
         this.setCursor(null)
         return
       }
+
+      const items = this._itemsFromPayload(data)
+      if (items) {
+        for (const item of items) {
+          if (media) {
+            yield (item.media ?? item) as InstagramPost
+          }
+          else {
+            yield item as unknown as InstagramPost
+          }
+        }
+      }
+
+      const next = this._nextCursor(data)
+      if (!this._hasMore(data, next)) {
+        this.setCursor(null)
+        return
+      }
+      if (!next || next === maxId) {
+        this.log?.debug(`Pagination stopped at ${endpoint}: no advancing cursor`)
+        this.setCursor(null)
+        return
+      }
+      maxId = this.setCursor(next)
     }
   }
 
@@ -529,28 +1091,30 @@ export class InstagramRestAPI {
       data.max_id = maxId
       const resp = (await this._call(endpoint, {
         method: 'POST',
-        data,
+        form: data,
       })) as Record<string, unknown>
 
-      if (resp) {
-        const items = resp.items as Array<Record<string, unknown>> | undefined
-        if (items) {
-          for (const item of items) {
-            yield (item.media ?? item) as InstagramPost
-          }
-        }
-
-        const info = resp.paging_info as Record<string, unknown> | undefined
-        if (!info || !info.more_available) {
-          this.setCursor(null)
-          return
-        }
-        maxId = this.setCursor(info.max_id as string | null)
-      }
-      else {
+      if (!resp) {
         this.setCursor(null)
         return
       }
+
+      const items = this._itemsFromPayload(resp)
+      if (items) {
+        for (const item of items) {
+          yield (item.media ?? item) as InstagramPost
+        }
+      }
+
+      const info = asRecord(resp.paging_info)
+      const next = info && typeof info.max_id === 'string'
+        ? info.max_id
+        : null
+      if (!info || !info.more_available || !next || next === maxId) {
+        this.setCursor(null)
+        return
+      }
+      maxId = this.setCursor(next)
     }
   }
 
@@ -567,26 +1131,35 @@ export class InstagramRestAPI {
       data.page = page
       const info = (await this._call(endpoint, {
         method: 'POST',
-        data,
+        form: data,
       })) as Record<string, unknown>
 
-      if (info) {
-        const sections = info.sections as Record<string, unknown>[] | undefined
-        if (sections) {
-          yield* sections
-        }
-
-        if (!info.more_available) {
-          this.setCursor(null)
-          return
-        }
-        page = info.next_page as string | null
-        maxId = this.setCursor(info.next_max_id as string | null)
-      }
-      else {
+      if (!info) {
         this.setCursor(null)
         return
       }
+
+      const sections = info.sections as Record<string, unknown>[] | undefined
+      if (sections) {
+        yield* sections
+      }
+
+      const nextPage = typeof info.next_page === 'string'
+        ? info.next_page
+        : null
+      const nextMaxId = typeof info.next_max_id === 'string'
+        ? info.next_max_id
+        : null
+      if (!info.more_available) {
+        this.setCursor(null)
+        return
+      }
+      if (nextPage === page && nextMaxId === maxId) {
+        this.setCursor(null)
+        return
+      }
+      page = nextPage
+      maxId = this.setCursor(nextMaxId)
     }
   }
 
@@ -624,6 +1197,45 @@ export class InstagramRestAPI {
         return
       }
     }
+  }
+
+  private _itemsFromPayload(data: Record<string, unknown>): Record<string, unknown>[] | undefined {
+    if (Array.isArray(data.items))
+      return data.items as Record<string, unknown>[]
+
+    if (Array.isArray(data.profile_grid_items))
+      return data.profile_grid_items as Record<string, unknown>[]
+
+    if (Array.isArray(data.edges)) {
+      return (data.edges as unknown[])
+        .map(edge => asRecord(asRecord(edge)?.node))
+        .filter((node): node is JsonRecord => node !== null)
+    }
+
+    return undefined
+  }
+
+  private _nextCursor(data: Record<string, unknown>): string | null {
+    const direct = data.next_max_id
+    if (typeof direct === 'string' && direct.length > 0)
+      return direct
+
+    const pageInfo = asRecord(data.page_info)
+    const end = pageInfo?.end_cursor
+    return typeof end === 'string' && end.length > 0
+      ? end
+      : null
+  }
+
+  private _hasMore(data: Record<string, unknown>, next: string | null): boolean {
+    if (typeof data.more_available === 'boolean')
+      return data.more_available
+
+    const pageInfo = asRecord(data.page_info)
+    if (typeof pageInfo?.has_next_page === 'boolean')
+      return pageInfo.has_next_page
+
+    return next != null
   }
 
   private _parseIntCursor(v: string | null): number | null {

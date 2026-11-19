@@ -27,7 +27,10 @@ export class InstagramReelsExtractor extends InstagramExtractor {
   override async* posts(): AsyncGenerator<InstagramPost> {
     const screenName = (this.groups[0] ?? '').replace(/^\//, '')
     const uid = await this.api.userId(screenName)
-    yield* this.api.userClips(uid)
+    const username = screenName.startsWith('id:')
+      ? undefined
+      : screenName
+    yield* this.api.userClips(uid, username)
   }
 }
 

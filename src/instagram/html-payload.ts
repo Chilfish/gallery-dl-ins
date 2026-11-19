@@ -14,6 +14,7 @@ import type { InstagramPost } from './types'
 
 const REELS_KEY = 'xdt_api__v1__feed__reels_media'
 const REELS_CONNECTION_KEY = 'xdt_api__v1__feed__reels_media__connection'
+const TIMELINE_KEY = 'xdt_api__v1__feed__user_timeline_graphql_connection'
 
 /** Narrow an unknown value to a plain object (arrays excluded). */
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -102,6 +103,90 @@ export function extractReelsMediaFromPage(
     const reels = reelsFromContainer(container)
     if (reels)
       return reels
+  }
+
+  return null
+}
+
+/**
+ * Find the profile posts connection embedded in a profile page.
+ *
+ * Crawler / logged-out variants server-render the first page as
+ * ``xdt_api__v1__feed__user_timeline_graphql_connection.edges`` or
+ * ``profile_grid_items``. Logged-in shells usually carry no posts.
+ */
+function findTimelineContainer(
+  node: unknown,
+  depth = 0,
+): Record<string, unknown> | null {
+  if (depth > 40 || node == null || typeof node !== 'object')
+    return null
+
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = findTimelineContainer(item, depth + 1)
+      if (found)
+        return found
+    }
+    return null
+  }
+
+  const rec = node as Record<string, unknown>
+
+  const direct = asRecord(rec[TIMELINE_KEY])
+  if (direct && Array.isArray(direct.edges))
+    return direct
+
+  if (Array.isArray(rec.profile_grid_items))
+    return { profile_grid_items: rec.profile_grid_items }
+
+  for (const value of Object.values(rec)) {
+    const found = findTimelineContainer(value, depth + 1)
+    if (found)
+      return found
+  }
+  return null
+}
+
+/**
+ * Parse a profile page for embedded post data.
+ *
+ * Returns ``null`` when the page has no usable payload (e.g. the logged-in
+ * SSR-disabled shell), or the post array when it does.
+ */
+export function extractUserTimelineFromPage(
+  html: string,
+): InstagramPost[] | null {
+  if (
+    !html.includes('data-sjs')
+    && !html.includes(TIMELINE_KEY)
+    && !html.includes('profile_grid_items')
+  ) {
+    return null
+  }
+
+  for (const block of html.matchAll(/<script[^>]*data-sjs[^>]*>([\s\S]*?)<\/script>/g)) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(block[1] ?? '')
+    }
+    catch {
+      continue
+    }
+
+    const container = findTimelineContainer(parsed)
+    if (!container)
+      continue
+
+    if (Array.isArray(container.edges)) {
+      const posts = container.edges
+        .map(edge => asRecord(asRecord(edge)?.node))
+        .filter((node): node is Record<string, unknown> => node !== null)
+      return posts as unknown as InstagramPost[]
+    }
+
+    if (Array.isArray(container.profile_grid_items))
+      return container.profile_grid_items as InstagramPost[]
   }
 
   return null
