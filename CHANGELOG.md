@@ -2,7 +2,7 @@
 
 本文件记录 `@chilfish/gallery-dl-instagram` 的用户可见变化。格式参考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
-## Unreleased
+## 0.2.7 (2026-11-19)
 
 修复用户 feed REST 端点退役导致帖子 / Reels / tagged 全部取不到的问题（#4）。
 
@@ -19,6 +19,12 @@
 ### 变更
 
 - `--api` 生效：`auto`（默认，GraphQL 优先）/ `rest`（REST 优先），两者都保留降级。
+
+### 安装
+
+```bash
+npm install @chilfish/gallery-dl-instagram@0.2.7
+```
 
 Closes #4
 
