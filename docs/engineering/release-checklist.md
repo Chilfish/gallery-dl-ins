@@ -1,6 +1,6 @@
 # Release Checklist
 
-**项目**: `@chilfish/gallery-dl-instagram`（CLI 二进制 `dl-ins`） | **最后更新**: 2026-11-14
+**项目**: `@chilfish/gallery-dl-instagram`（CLI 二进制 `dl-ins`） | **最后更新**: 2026-11-19
 
 > 发布到 npm。目标：每个「里程碑发布」的产物在真实环境验证通过，不留已知回归。
 > 本文档覆盖**里程碑发布**（打 tag → CI 发布 npm → 手写 GitHub Release）的完整清单。
@@ -110,6 +110,16 @@
 - 首次配置后必须在 npm 要求的期限内成功发布一次，Trusted Publisher 才会从 `Pending validation` 变为生效
 
 ## 发布记录
+
+### 0.2.7（2026-11-19）
+
+- 修复用户 feed REST 端点退役：posts / tagged / reels / profile 改为 doc_id GraphQL 主路径，REST 与页面 payload 降级（#4）
+- 发布提交 `chore(release): v0.2.7`，tag `v0.2.7`；`publish.yml` 全步骤通过
+- 离线门禁：typecheck / lint / 200 tests / build 全绿；CI run `44480583029` 通过
+- 真实环境冒烟：`yunoch1` posts 1 条、`instagram` reels 1 条、`instagram` tagged 1 条、`yunoch1 -i` 资料 + 34 条 posts
+- registry：`latest = 0.2.7`，从官方 registry 安装后 `dl-ins --version` 输出 `0.2.7`
+- 发布后约 6 分钟处于处理中，随后 `dist-tags` 自动指向 0.2.7
+- GitHub Release v0.2.7 已创建，issue #4 已关闭
 
 ### 0.2.6（2026-11-18）
 
