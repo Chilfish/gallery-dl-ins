@@ -109,16 +109,24 @@ export class InstagramSDK {
     url: string,
     outputDir = './data',
   ): Promise<{ posts: number, files: number, bytes: number }> {
+    if (!this.storage) {
+      throw new Error(
+        'download() requires a Storage implementation — '
+        + 'pass { storage } to the constructor (use createSDK() from "@chilfish/gallery-dl-instagram/node" for fs output).',
+      )
+    }
+
     const extractor = this._resolve(url)
     const job = new DownloadJob(extractor as Extractor)
     job.basePath = outputDir
 
     await job.run()
 
+    const stats = job.stats
     return {
-      posts: (job as unknown as { _postCount: number })._postCount ?? 0,
-      files: (job as unknown as { _fileCount: number })._fileCount ?? 0,
-      bytes: (job as unknown as { _downloadedBytes: number })._downloadedBytes ?? 0,
+      posts: stats.posts,
+      files: stats.files,
+      bytes: stats.bytes,
     }
   }
 

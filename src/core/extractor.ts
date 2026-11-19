@@ -27,6 +27,8 @@ export interface ExtractorOptions {
   storage: Storage
   /** The logger interface — at minimum a debug/info/warn/error contract */
   log: Logger
+  /** Override the default random request interval ``[6, 12]`` seconds. */
+  requestInterval?: [number, number]
 }
 
 export interface Logger {
@@ -85,6 +87,8 @@ export abstract class Extractor {
     this.http = opts.http
     this.storage = opts.storage
     this.log = opts.log
+    if (opts.requestInterval)
+      this.requestInterval = opts.requestInterval
   }
 
   /** Initialization */

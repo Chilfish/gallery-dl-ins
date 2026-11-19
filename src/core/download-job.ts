@@ -26,6 +26,16 @@ export class DownloadJob extends Job {
   private _downloadedBytes = 0
   private _skippedCount = 0
 
+  /** Download counters for the current job tree. */
+  get stats(): { posts: number, files: number, bytes: number, skipped: number } {
+    return {
+      posts: this._postCount,
+      files: this._fileCount,
+      bytes: this._downloadedBytes,
+      skipped: this._skippedCount,
+    }
+  }
+
   registerArchive(category: string, format: string): void {
     this._archiveFmts.set(category, format)
   }
@@ -148,6 +158,21 @@ export class DownloadJob extends Job {
       return
 
     const parentExtr = this.extractor
+    const parentState = parentExtr as unknown as {
+      csrfToken?: { value: string }
+      wwwClaim?: { value: string }
+      lsdToken?: { value: string }
+      requestInterval?: [number, number]
+    }
+
+    const state = parentState.csrfToken
+      ? {
+          csrfToken: parentState.csrfToken,
+          wwwClaim: parentState.wwwClaim,
+          lsdToken: parentState.lsdToken,
+        }
+      : undefined
+
     const childExtr = Reflect.construct(cls, [
       {
         url: msg.url,
@@ -156,6 +181,8 @@ export class DownloadJob extends Job {
         http: parentExtr.http,
         storage: parentExtr.storage,
         log: parentExtr.log,
+        state,
+        requestInterval: parentState.requestInterval,
       },
     ])
 

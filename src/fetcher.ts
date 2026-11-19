@@ -45,11 +45,27 @@ export function buildUrl(base: string, params?: Record<string, string | number |
     : '?'}${qs}`
 }
 
-/** Merge cookie strings with append semantics: a=1 + b=2 → a=1; b=2 */
+/**
+ * Merge cookie strings by name: later values override earlier ones.
+ *
+ * a=1; b=2 + b=3 → a=1; b=3 (no duplicate ``csrftoken`` headers).
+ */
 export function mergeCookie(base: string | null, extra: string): string {
   if (!base)
     return extra
-  return `${base}; ${extra}`
+
+  const cookies = new Map<string, string>()
+  for (const part of `${base}; ${extra}`.split(';')) {
+    const trimmed = part.trim()
+    if (!trimmed)
+      continue
+    const eq = trimmed.indexOf('=')
+    if (eq <= 0)
+      continue
+    cookies.set(trimmed.slice(0, eq).trim(), trimmed.slice(eq + 1).trim())
+  }
+
+  return Array.from(cookies, ([name, value]) => `${name}=${value}`).join('; ')
 }
 
 /** Extract csrftoken value from a Cookie header string. */
