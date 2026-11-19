@@ -303,7 +303,8 @@ const config = new ConfigManager({
       cursor: '上次的cursor',
       include: 'all',         // user 提取器分发哪些子类型
       split: false,           // stories 每帧独立输出
-      'user-strategy': 'search,web', // 用户名解析策略链
+      'user-strategy': 'web,info',   // 用户名解析策略链（topsearch 已失效）
+      api: 'auto',                   // auto = doc_id GraphQL 优先；rest = REST 优先
     },
   },
 })

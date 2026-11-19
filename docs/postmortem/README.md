@@ -15,6 +15,7 @@
 | [005](005-music-metadata-nesting-mismatch.md) | `MusicMetadata` 类型与真实响应不匹配 | 类型假设 ≠ 真实数据 | `music_info` 是 `MusicSticker` 容器；不要凭直觉包裹类型 |
 | [006](006-stories-user-resolution.md) | stories `User not found` 与 REST `reels_media` 失效 | 错误语义 / 端点退化 | 错误必须保留状态码；HTML 抓取显式 `responseType: 'text'` 并准备多来源退路 |
 | [007](007-highlight-page-payload.md) | highlight 直链只走 REST，页面 payload 形状与 `__typename` 分流失配 | 类型假设 / 端点退化 | 页面 payload 按路由区分形状；分流看 `items` 而不是 `__typename` |
+| [008](008-rest-feed-deprecation.md) | 用户 feed REST 端点全面退役，缺少 doc_id GraphQL 退路 | 端点退化 / 依赖假设 | 用户 feed 走 doc_id GraphQL，REST 与页面 payload 只作降级；200 HTML 也要识别 |
 
 ## 高频雷区（写码前自查）
 
@@ -35,8 +36,10 @@
 - **错误保留状态码与 body 摘要**：`_call()` 按文本读取后自行解析 JSON，非 2xx / 非 JSON 都要抛带上下文的错误；禁止 `catch {}` 后统一 `User not found`。见 [006](006-stories-user-resolution.md)。
 - **HTML 抓取必须 `responseType: 'text'` 且准备多特征**：`profile_id` 会缺席，优先 `page_id":"profilePage_<id>`；stories 数据优先取页面内嵌 `xdt_api__v1__feed__reels_media`。见 [006](006-stories-user-resolution.md)。
 - **同一功能的页面 payload 按路由可能有不同形状**：user stories 是 `reels_media`，highlight 页面是 `reels_media__connection.edges[].node`。补页面解析时按路由分别取样本。见 [007](007-highlight-page-payload.md)。
-- **REST/GraphQL 分流看形状而非单个标记**：`items` 存在即 REST story/reel 形状，`__typename` 可能只是页面附带字段。见 [007](007-highlight-page-payload.md)。
-- **端点退化要留退路**：REST `reels_media` 对网页 session 已返回 500；单一数据源不可靠时用页面 payload / 可配置策略链。
+- **REST/GraphQL 分流看形状而非单个标记**：`items` / `image_versions2 + user` 存在即 REST 形状；doc_id GraphQL 节点也带 `__typename`，不要据此走旧 GraphQL 解析器。见 [007](007-highlight-page-payload.md)、[008](008-rest-feed-deprecation.md)。
+- **端点退化要留退路**：用户 feed / clips / usertags 的 REST 端点已退役，主路径是 `POST i.instagram.com/api/graphql` + `doc_id`；REST 与页面 payload 只作降级。见 [008](008-rest-feed-deprecation.md)。
+- **200 也可能是拒绝**：`not-logged-in` / `challenge_required` / `feedback_required` / SPA HTML 壳要单独识别，不能统一报 `non-JSON response`。
+- **doc_id 会随 IG 构建轮换**：集中在 `api.ts` 的 `DOC_IDS`，失效时按 [008](008-rest-feed-deprecation.md#doc_id-刷新方法) 从 JS bundle 重新提取。
 
 ### 3. 配置与选项
 

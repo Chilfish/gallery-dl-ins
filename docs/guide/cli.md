@@ -113,6 +113,7 @@ dl-ins saved --cookies="..."
 |---|---|---|
 | `--include <list>` | `posts` | user 命令的子提取器，逗号分隔：`posts,reels,tagged,stories,highlights,info,avatar`，或 `all` |
 | `--split` | `false` | stories：每个 frame 单独输出 |
+| `--api <backend>` | `auto` | `auto` 为 doc_id GraphQL 优先；`rest` 把 REST 提前；两者都保留降级 |
 | `-i, --info` | `false` | 打印结构化信息到终端，不下载 |
 | `-v, --verbose` | `false` | debug 输出 |
 
@@ -123,7 +124,7 @@ dl-ins saved --cookies="..."
 | `--cookies <string>` | `INSTAGRAM_COOKIES` | 完整 Cookie 头 |
 | `--sessionid <value>` | `INSTAGRAM_SESSIONID` | 单个 sessionid |
 
-> **已声明但未生效的选项**：`--api`（`rest` / `graphql`）和 `--order-posts` 会被接受并写入配置，但当前没有任何提取器读取它们。详见 [cli-architecture.md](../engineering/cli-architecture.md#选项--配置的映射)。
+> **已声明但未生效的选项**：`--order-posts` 会被接受并写入配置，但当前没有任何提取器读取它。详见 [cli-architecture.md](../engineering/cli-architecture.md#选项--配置的映射)。
 
 ## `--include` 对应关系
 
@@ -182,7 +183,7 @@ dl-ins https://www.instagram.com/user/ --cursor=<value>
 
 ## 限流
 
-请求间隔固定 6–12 秒随机，模拟正常浏览。**没有关闭开关**——提速会导致 Instagram 风控。遇到 429 时请求会失败，等一段时间再重试。
+请求间隔固定 6–12 秒随机，API 调用与文件下载都受限，模拟正常浏览。**没有关闭开关**——提速会导致 Instagram 风控。遇到 429 时请求会失败，等一段时间再重试。
 
 ## 故障排查
 
@@ -190,6 +191,8 @@ dl-ins https://www.instagram.com/user/ --cursor=<value>
 |---|---|---|
 | `redirect to login page` | Cookie 失效或未登录 | 重新导出 Cookie |
 | `redirect to challenge page` | 账号被风控 | 浏览器完成验证后再试 |
+| `logged-out page (not-logged-in)` | 200 HTML 拒绝页 | Cookie 失效，重新导出 `--cookies` |
+| `doc_id may be outdated` | Instagram 前端换构建 | 按 [postmortem 008](../postmortem/008-rest-feed-deprecation.md#doc_id-刷新方法) 更新 doc_id |
 | `Auth required` | 端点需要登录 | 加 `--cookies` 或 `--sessionid` |
 | 下载 0 个文件 | 子提取器拿到空配置 | 见 [postmortem 004](../postmortem/004-queue-dispatch-missing-deps.md) |
 | 图片被截断/体积异常 | 二进制被当文本解码 | 见 [postmortem 003](../postmortem/003-binary-download-csrf.md) |

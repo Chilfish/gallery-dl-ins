@@ -64,6 +64,7 @@ interface ExtractorOptions {
   http: HttpClient
   storage: Storage
   log: Logger
+  requestInterval?: [number, number]   // 覆盖默认 [6, 12] 秒（内部使用）
 }
 ```
 
@@ -104,6 +105,7 @@ abstract class Job {
 class DownloadJob extends Job {
   basePath: string                            // 输出根目录，默认 ''
   readonly archive: Map<string, Set<string>>  // category → archiveKey 集合
+  readonly stats: { posts: number, files: number, bytes: number, skipped: number }
 
   registerArchive(category: string, format: string): void   // 例 '{media_id}'
 }
@@ -111,7 +113,7 @@ class DownloadJob extends Job {
 
 - 目录固定 `{category}/{username}`，文件名 `{media_id}[_{num}].{extension}`。
 - `handleUrl()` 以 `responseType: 'arraybuffer'` 下载后写入 `Storage`。
-- `handleQueue()` 用父 Job 的 `config`/`http`/`storage`/`log` 构造子 extractor，并继承 archive。
+- `handleQueue()` 用父 Job 的 `config`/`http`/`storage`/`log` 构造子 extractor，并继承 archive；同时透传共享会话 token（`csrfToken` / `wwwClaim` / `lsdToken`）与 `requestInterval`。
 
 ### `PrintJob`
 
@@ -259,6 +261,7 @@ import { InstagramExtractor } from '@chilfish/gallery-dl-instagram'
 | `api` | `InstagramRestAPI` | `_init()` 中创建 |
 | `csrfToken` | `Ref<string>` | CSRF token |
 | `wwwClaim` | `Ref<string>` | IG WWW Claim |
+| `lsdToken` | `Ref<string>` | doc_id GraphQL 的 `lsd` token（父子共享） |
 | `cursor` | `Ref<string \| null>` | 分页游标 |
 
 ```typescript
@@ -266,6 +269,12 @@ interface InstagramExtractorOptions extends ExtractorOptions {
   sessionId?: string
   cookies?: Record<string, string>
   csrfToken?: string          // 预置 CSRF（匿名 Cookie Jar 场景）
+  lsdToken?: string           // 预置 lsd token
+  state?: {                   // 父子提取器共享的会话 refs
+    csrfToken?: Ref<string>
+    wwwClaim?: Ref<string>
+    lsdToken?: Ref<string>
+  }
 }
 
 async login(): Promise<void>                            // 当前为 no-op
@@ -279,7 +288,7 @@ _updateCursor(cursor: string | null): string | null
 _assignUser(user: InstagramUser): void
 ```
 
-`items()` 的管线：读配置 → 构建 `ParserConfig` → 遍历 `posts()` → 选择解析器（`post.items` 存在走 REST，否则看 `__typename`）→ 产出 `directory` 消息 → 逐文件产出 `url` 消息（音频 / 视频 / 图片，`order-files` 可反转顺序）。
+`items()` 的管线：读配置 → 构建 `ParserConfig` → 遍历 `posts()` → **按响应形状**选择解析器（`items` 或 `image_versions2 + user` 存在走 REST；doc_id GraphQL 节点也是 REST 形状）→ 产出 `directory` 消息 → 逐文件产出 `url` 消息（音频 / 视频 / 图片，`order-files` 可反转顺序）。
 
 ### 子提取器
 
@@ -289,9 +298,9 @@ _assignUser(user: InstagramUser): void
 |---|---|---|---|
 | `InstagramPostExtractor` | `post` / `reel` | `/p/{code}`、`/tv/{code}`、`/reel(s)/{code}`、`/share/...` | `api.media()` |
 | `InstagramUserExtractor` | `user` | `/{username}` | 按 `include` 发 `Queue`，自身不取数 |
-| `InstagramPostsExtractor` | `posts` | `/{username}/posts` | `api.userFeed()` |
-| `InstagramReelsExtractor` | `reels` | `/{username}/reels` | `api.userClips()` |
-| `InstagramTaggedExtractor` | `tagged` | `/{username}/tagged` | `api.userTagged()`（额外产出 `tagged_*` 元数据） |
+| `InstagramPostsExtractor` | `posts` | `/{username}/posts` | `api.userFeed()`：doc_id GraphQL → REST → 页面 payload |
+| `InstagramReelsExtractor` | `reels` | `/{username}/reels` | `api.userClips()`：doc_id GraphQL → REST form POST |
+| `InstagramTaggedExtractor` | `tagged` | `/{username}/tagged` | `api.userTagged()`：doc_id GraphQL → REST（额外产出 `tagged_*` 元数据） |
 | `InstagramStoriesExtractor` | `stories` / `highlights` | `/stories/{user}/`、`/stories/highlights/{id}`、`/aGlnaGxpZ2h0…` | 页面内嵌 payload（user: `reels_media`；highlight: `reels_media__connection`）→ `api.reelsMedia()` 回退 |
 | `InstagramHighlightsExtractor` | `highlights` | `/{username}/highlights` | `api.highlightsMedia()` |
 | `InstagramTagExtractor` | `tag` | `/explore/tags/{tag}` | `api.tagsMedia()` |
@@ -311,15 +320,19 @@ class InstagramRestAPI {
     csrfToken: { value: string }
     wwwClaim: { value: string }
     cursor: { value: string | null }
-    userStrategies?: () => string[]   // 默认 ['search', 'web']
+    request?: (url: string, cfg?: RequestConfig) => Promise<HttpResponse>  // 节流包装
+    lsdToken?: { value: string }              // doc_id GraphQL token
+    apiBackend?: () => string                 // 'auto' | 'rest' | 'graphql'
+    userStrategies?: () => string[]           // 默认 ['web', 'info']
+    log?: Logger
   })
 
   // 帖子 / 媒体
   media(shortcode: string): AsyncGenerator<InstagramPost>
 
-  // 用户内容
-  userFeed(userId: string): AsyncGenerator<InstagramPost>
-  userClips(userId: string): AsyncGenerator<InstagramPost>
+  // 用户内容（username 用于 posts 的 doc_id 查询）
+  userFeed(userId: string, username?: string): AsyncGenerator<InstagramPost>
+  userClips(userId: string, username?: string): AsyncGenerator<InstagramPost>
   userTagged(userId: string): AsyncGenerator<InstagramPost>
   userSaved(): AsyncGenerator<InstagramPost>
   userCollection(collectionId: string): AsyncGenerator<InstagramPost>
@@ -337,7 +350,7 @@ class InstagramRestAPI {
   userById(userId: string): Promise<InstagramUser>
   userByName(username: string): Promise<InstagramUser>      // 解析 { data: { user } }
   userBySearch(username: string): Promise<InstagramUser>
-  userByWeb(username: string): Promise<{ id: string }>      // page_id / profile_id
+  userByWeb(username: string): Promise<{ id: string }>      // page_id / profile_id / props.id
   userByScreenName(screenName: string, strategies?: string[]): Promise<InstagramUser>
   userId(screenName: string, checkPrivate?: boolean, strategies?: string[]): Promise<string>
 
@@ -347,9 +360,11 @@ class InstagramRestAPI {
 }
 ```
 
-所有请求经 `_call()` 注入 `Cookie: csrftoken=…`、`X-CSRFToken`、`X-IG-App-ID`、`X-ASBD-ID`、`X-IG-WWW-Claim`、`X-Requested-With`、`Referer`，并在登录/challenge 重定向时抛错。
+所有请求经 `_call()` 注入 `Cookie: csrftoken=…`、`X-CSRFToken`、`X-IG-App-ID`、`X-ASBD-ID`、`X-IG-WWW-Claim`、`X-Requested-With`、`Referer`，并在登录/challenge 重定向时抛错。API 调用走注入的 `request` 回调，因此受 `Extractor` 的 6–12s 间隔限制。
 
-`_call()` 以文本取回响应后自行解析 JSON：非 2xx 抛出含状态码与 body 摘要的错误，2xx 非 JSON 抛出 `non-JSON response`。`userByScreenName()` 默认策略 `['search', 'web']`（可由 `user-strategy` 配置覆盖），全部失败时汇总每条策略的原因。
+`_call()` 以文本取回响应后自行解析 JSON：非 2xx 抛出含状态码与 body 摘要的错误；2xx 非 JSON 时先识别 `not-logged-in` / `challenge_required` / `feedback_required` / SPA HTML 壳；JSON `status:"fail"` 直接抛 `message`。POST 以 `URLSearchParams` 发送 form-encoded。
+
+用户内容以 doc_id GraphQL 为主路径（`i.instagram.com/api/graphql` 优先，`www.instagram.com/api/graphql` 回退），REST 与页面 payload 只作降级。`userByScreenName()` 默认策略 `['web', 'info']`（可由 `user-strategy` 配置覆盖），全部失败时汇总每条策略的原因。doc_id 常量与刷新方法见 [postmortem 008](../postmortem/008-rest-feed-deprecation.md#doc_id-刷新方法)。
 
 ### Parsers
 

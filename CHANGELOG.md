@@ -4,6 +4,24 @@
 
 ## Unreleased
 
+修复用户 feed REST 端点退役导致帖子 / Reels / tagged 全部取不到的问题（#4）。
+
+### 修复
+
+- 用户帖子、Reels、tagged、资料改为 doc_id GraphQL 主路径，REST 与页面内嵌 payload 作为降级。
+- 用户名解析默认策略改为 `web,info`；`web` 命中后经 GraphQL 补全资料。
+- 识别 200 HTML 的 `not-logged-in` / `challenge_required` / `feedback_required` 与 JSON `status:"fail"`，错误带端点与状态码。
+- API 调用接入 6–12s 限流；POST 改为 `application/x-www-form-urlencoded`。
+- Cookie 合并按名去重；子提取器继承父级 CSRF / WWW Claim / lsd token。
+- 分页兼容 `edges` / `profile_grid_items`，游标不前进时停止。
+- `download()` 使用 `DownloadJob.stats`，未提供 Storage 时给出明确错误。
+
+### 变更
+
+- `--api` 生效：`auto`（默认，GraphQL 优先）/ `rest`（REST 优先），两者都保留降级。
+
+Closes #4
+
 ## 0.2.6 (2026-11-18)
 
 修复 `/stories/highlights/{id}/` 直链提取失败的问题（#3）。

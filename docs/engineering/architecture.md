@@ -217,39 +217,70 @@ Referer:            https://www.instagram.com/
 
 这些头是 Instagram 的反爬校验——缺任意一个都会 403。
 
-`_call()` 以 `responseType: 'text'` 取回响应后自行 `JSON.parse`：非 2xx 抛出带状态码与 body 摘要的错误（如 `Instagram API error 429 at …: …`），2xx 但非 JSON（例如登录壳 HTML）单独报 `non-JSON response`。因此 404 / 429 / 空 body 不再被吞成统一的 `User not found`。
+`_call()` 以 `responseType: 'text'` 取回响应后自行 `JSON.parse`：非 2xx 抛出带状态码与 body 摘要的错误（如 `Instagram API error 429 at …: …`），2xx 但非 JSON 时先识别拒绝语义（`not-logged-in` / `challenge_required` / `feedback_required` / SPA HTML 壳），再报 `non-JSON response`。JSON 体带 `status: "fail"` 时直接抛 `message`。因此 404 / 429 / 空 body 不再被吞成统一的 `User not found`。
 
-### 6.2 用户查找策略链
+`_call()` 通过构造时注入的 `request` 回调走 `Extractor.request()`，因此 API 调用同样受 6–12s 间隔限制。POST 统一用 `URLSearchParams` 发送 `application/x-www-form-urlencoded`；GraphQL 的 `doc_id` 请求也走同一入口。
 
-```typescript
-userByScreenName(name, strategies = cfg('user-strategy', ['search', 'web'])):
-  for strategy in strategies:
-    try search → return
-    try info   → return
-    try web    → return
-  throw Error(`User not found: ${name} (search: …; web: …)`)
+### 6.2 doc_id GraphQL 主路径
+
+用户 feed 的 REST 端点已退役，主路径改为 Relay `doc_id`：
+
+```
+POST https://i.instagram.com/api/graphql   ← 首选
+POST https://www.instagram.com/api/graphql ← 回退
+body: doc_id + variables + lsd + server_timestamps
+      + fb_api_caller_class=RelayModern
+      + fb_api_req_friendly_name=<operation>
+header: X-FB-LSD + X-FB-Friendly-Name + 常规反爬头
 ```
 
-默认链与 Python 对齐为 `search,web`，可用 `extractor.instagram.user-strategy`（字符串 `"search,info,web"` 或数组）覆盖。每条策略的失败原因会汇总进最终错误。
+`lsd` 从 `https://www.instagram.com/` 的 `"LSD",[],{"token":"…"}` 提取，缓存在共享 `Ref<string>` 中，父子提取器复用。
+
+| 用途 | doc_id | 变量 | 响应路径 |
+|---|---|---|---|
+| profile | `28036671149327607` | `id` / `render_surface` + provided | `data.user` |
+| posts | `27014165781614298` | `after` / `username` / `data.count` + provided | `data.xdt_api__v1__feed__user_timeline_graphql_connection.edges[].node` |
+| tagged | `29179217291735675` | `after` / `user_id` / `count` + provided | `data.xdt_api__v1__usertags__user_id__feed_connection.edges[].node` |
+| reels | `28280418711631396` | `after` / `user_id` / `data.count` + provided | `data.fetch__XDTUserDict.clips_connection.edges[].node.media` |
+
+分页统一读 `page_info.end_cursor` → 下一页 `after`，`has_next_page` 判断结束。doc_id 随 IG 前端构建轮换，刷新方法见 [postmortem 008](../postmortem/008-rest-feed-deprecation.md#doc_id-刷新方法)。
+
+**降级链**：GraphQL → REST → 页面内嵌 payload（`extractUserTimelineFromPage()`）。`extractor.instagram.api = "rest"`（CLI `--api rest`）时把 REST 提前，但仍保留 GraphQL 兜底。
+
+### 6.3 用户查找策略链
+
+```typescript
+userByScreenName(name, strategies = cfg('user-strategy', ['web', 'info'])):
+  for strategy in strategies:
+    try web    → 页面取 id，再用 userById()（doc_id profile）补全资料
+    try info   → web_profile_info
+    try search → topsearch（已失效，默认不启用）
+  throw Error(`User not found: ${name} (web: …; info: …)`)
+```
+
+默认链为 `web,info`；`topsearch` 已返回 404，只保留为可选策略。可用 `extractor.instagram.user-strategy`（字符串 `"web,info"` 或数组）覆盖。每条策略的失败原因会汇总进最终错误。`userById()` 优先走 doc_id profile，REST `/v1/users/{id}/info/` 仅作降级。
 
 | 策略 | 端点 | 说明 |
 |------|------|------|
-| `search` | `instagram.com/web/search/topsearch/` | 用户名精确匹配 |
-| `info` | `/api/v1/users/web_profile_info/` | 响应形状 `{ data: { user } }` |
-| `web` | `instagram.com/{username}` | HTML 页面提取 `page_id":"profilePage_<id>`，回退 `profile_id` |
+| `web` | `instagram.com/{username}` | HTML 页面提取 `page_id":"profilePage_<id>`、`"props":{"id":"<id>"`，再用 GraphQL 补全 |
+| `info` | `/api/v1/users/web_profile_info/` | 响应形状 `{ data: { user } }`；可能 429 |
+| `search` | `instagram.com/web/search/topsearch/` | 已失效（404），不默认启用 |
 
-### 6.3 分页引擎
+### 6.4 分页引擎
 
 四种分页模式，全部基于游标（cursor-based）：
 
 | 引擎 | HTTP 方法 | 分页字段 | 用途 |
 |------|-----------|----------|------|
-| `_pagination` | GET | `next_max_id` → `max_id` | 用户帖子、tagged、saved |
-| `_paginationPost` | POST | `paging_info.max_id` | 用户 Reels |
-| `_paginationSections` | POST | `next_max_id` + `next_page` | 标签帖子 |
+| `_pagination` | GET | `next_max_id` / `page_info.end_cursor` → `max_id` | saved、collection、REST 降级 |
+| `_paginationPost` | POST（form） | `paging_info.max_id` | REST Reels 降级 |
+| `_paginationSections` | POST（form） | `next_max_id` + `next_page` | 标签帖子 |
 | `_paginationFollowing` | GET | 整数 `next_max_id` | 粉丝/关注列表 |
+| `_graphqlPagination` | POST（doc_id） | `page_info.end_cursor` → `after` | posts / tagged / reels |
 
 游标持久化：用户通过 `--cursor` 传入上次的 cursor 值即可断点续传。
+
+`_pagination` 同时识别 `items`、`edges[].node`、`profile_grid_items`；`more_available` 缺失时回退到 `page_info.has_next_page` / `next_max_id`，游标不前进时停止，避免静默截断或死循环。
 
 ## 7. 解析器 — parsers.ts
 
@@ -315,13 +346,13 @@ InstagramUserExtractor (Dispatch Hub)
     │  通过 --include 配置决定启用哪些子提取器
     │  yield Queue(…, { _extractor: XxxExtractor })
     │
-    ├── InstagramPostsExtractor      → api.userFeed(uid)
-    ├── InstagramReelsExtractor      → api.userClips(uid)
-    ├── InstagramTaggedExtractor     → api.userTagged(uid)
+    ├── InstagramPostsExtractor      → api.userFeed(uid, username)   # doc_id GraphQL → REST → 页面 payload
+    ├── InstagramReelsExtractor      → api.userClips(uid, username)  # doc_id GraphQL → REST form POST
+    ├── InstagramTaggedExtractor     → api.userTagged(uid)           # doc_id GraphQL → REST
     ├── InstagramStoriesExtractor    → api.reelsMedia([reelId])
     ├── InstagramHighlightsExtractor → api.highlightsMedia(uid)
-    ├── InstagramInfoExtractor       → api.userByScreenName(name)
-    └── InstagramAvatarExtractor     → api.userByScreenName(name)
+    ├── InstagramInfoExtractor       → api.userById(uid)             # doc_id profile → REST
+    └── InstagramAvatarExtractor     → api.userByScreenName(name)    # web id + doc_id profile
 
 InstagramPostExtractor
     ├── share URL → 302 重定向 → 获取真实 shortcode
@@ -360,7 +391,9 @@ class DownloadJob extends Job {
 
   handleQueue(msg):
     1. 获取 _extractor 类
-    2. new ChildExtractor(url)
+    2. new ChildExtractor(url) ← 注入 config/http/storage/log
+       + state { csrfToken, wwwClaim, lsdToken } ← 共享会话 token
+       + requestInterval                          ← 节流配置
     3. new DownloadJob(child) ← 继承 archive
     4. childJob.run()         ← 递归
     5. 合并 archive 回父 Job
@@ -371,13 +404,14 @@ class DownloadJob extends Job {
 
 | 机制 | 实现 | 说明 |
 |------|------|------|
-| 请求间隔 | `Extractor._throttle()` | 6~12 秒随机 |
+| 请求间隔 | `Extractor._throttle()` | 6~12 秒随机；API 调用经 `request` 回调同样受限 |
 | UA 伪装 | Chrome 131 Windows | adapter 中设置 |
-| CSRF | `Extractor.generateToken(16)` | 随机生成 + 响应 cookie 更新 |
+| CSRF | `Extractor.generateToken(16)` | 预置 cookie csrftoken 优先；响应 cookie 会更新 |
+| LSD | 页面 `"LSD",[],{"token":"…"}` | doc_id GraphQL 必需，父子提取器共享 `Ref` |
 | App ID | `X-IG-App-ID: 936619743392459` | API `_call()` 中固定注入 |
 | WWW Claim | `x-ig-set-www-claim` 响应头 | 动态更新，跨请求同步 |
-| 登录检测 | `request()` 拦截 | 检测 redirect 到 `/accounts/login/` 或 `/challenge/` |
-| Cookie | `--sessionid` 命令行参数 | 从浏览器导出 |
+| 登录检测 | `request()` 拦截 | 检测 redirect 到 `/accounts/login/` 或 `/challenge/`；同时识别 200 HTML 拒绝页 |
+| Cookie | `--sessionid` 命令行参数 | 从浏览器导出；`mergeCookie()` 按名去重 |
 
 ## 11. 配置系统 — ConfigManager
 

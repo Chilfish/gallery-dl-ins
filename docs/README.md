@@ -60,6 +60,7 @@ TypeScript 移植版 Instagram 媒体提取器：平台无关核心（只依赖 
 | [005](postmortem/005-music-metadata-nesting-mismatch.md) | `MusicMetadata` 类型与真实 API 响应不匹配 |
 | [006](postmortem/006-stories-user-resolution.md) | stories `User not found` 与 REST `reels_media` 失效 |
 | [007](postmortem/007-highlight-page-payload.md) | highlight 直链只走 REST，页面 payload 形状与 `__typename` 分流失配 |
+| [008](postmortem/008-rest-feed-deprecation.md) | 用户 feed REST 端点退役，改用 doc_id GraphQL + 降级链 |
 
 ## archive/ — 存档
 

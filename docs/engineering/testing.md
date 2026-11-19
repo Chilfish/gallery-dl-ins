@@ -30,10 +30,13 @@ bun run test:coverage
 | `unit/extractor-patterns.test.ts` | **11 个提取器的 URL 正则与分组下标（回归保护）** |
 | `unit/sdk-resolve.test.ts` | `InstagramSDK._resolve` 的 URL → 提取器路由顺序 |
 | `unit/parsers.test.ts` | REST / GraphQL → `ParsedPost` 归一化 |
+| `unit/fetcher.test.ts` | Cookie 去重合并、CSRF 提取、URL / body 序列化 |
+| `unit/api.test.ts` | 用户解析策略、doc_id GraphQL（posts/tagged/reels/profile）、REST 降级、form 编码、200 HTML 错误语义 |
+| `unit/html-payload.test.ts` | stories / highlights payload、profile timeline payload |
 | `integration/post.test.ts` | 单帖：directory + url 消息、登录重定向抛错 |
 | `integration/reel.test.ts` | Reel：`videos=true` 只产出视频 URL |
 | `integration/stories.test.ts` | Story / Highlight |
-| `integration/user.test.ts` | User 提取器 → Queue → 子提取器 全链路 |
+| `integration/user.test.ts` | User 提取器 → Queue → 子提取器 全链路；posts 走 doc_id GraphQL |
 
 ## Mock 设施
 
@@ -44,6 +47,8 @@ const http = new MockHttpClient().add('/api/v1/media/', mockPost)
 ```
 
 Storage 用 `tests/helpers/` 里的内存实现（`exists: false`、`write`/`mkdir` 空实现）。
+
+API 调用现在走 `Extractor.request()` 的 6–12s 节流；集成测试构造 extractor 时传 `requestInterval: [0, 0]`，避免用例超时。需要 doc_id GraphQL 的用例还要给 `/` 加一条返回 `"LSD",[],{"token":"…"}` 的 HTML 路由，否则会走 REST 降级。
 
 ## Cookie 与 `.env`
 

@@ -39,7 +39,7 @@ dl-ins saved               → InstagramSavedExtractor（需登录）
 | `--include <list>` | `include` | `InstagramUserExtractor.items()` |
 | `--split` | `split` | `InstagramStoriesExtractor.posts()` |
 
-**死选项**：`--api`、`--order-posts` 会被 `buildConfig()` 写入配置，但没有任何 `_cfg()` 读取它们。新增选项前先确认消费方存在，否则不要写进文档。
+**死选项**：`--order-posts` 会被 `buildConfig()` 写入配置，但没有任何 `_cfg()` 读取它。新增选项前先确认消费方存在，否则不要写进文档。`--api` 已生效：`InstagramExtractor._init()` 读取 `extractor.instagram.api` 并传给 `InstagramRestAPI.apiBackend`。
 
 其他选项：
 
