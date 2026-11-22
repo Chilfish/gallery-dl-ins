@@ -2,6 +2,22 @@
 
 本文件记录 `@chilfish/gallery-dl-instagram` 的用户可见变化。格式参考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## 0.3.0 (2026-11-22)
+
+SDK 调用方可以为 HTTP 请求设置代理地址。
+
+### 新增
+
+- `createSDK({ proxy })` 让所有请求走 HTTP(S) 代理；未显式传入时读取 `http_proxy` / `HTTPS_PROXY` / `https_proxy`，传 `null` 可关闭环境变量回退。
+- `/node` 导出 `createProxyFetch(proxy, options?)`，核心导出 `createProxyHttpClient(proxy)` 与 `assertHttpProxy(proxy)`。
+- Node 通过可选 peer 依赖 `undici` 的 `ProxyAgent` 转发，缺失时首次请求给出安装提示；Bun 使用原生 fetch 的 `proxy` 选项。
+
+### 安装
+
+```bash
+npm install @chilfish/gallery-dl-instagram@0.3.0
+```
+
 ## 0.2.7 (2026-11-19)
 
 修复用户 feed REST 端点退役导致帖子 / Reels / tagged 全部取不到的问题（#4）。
