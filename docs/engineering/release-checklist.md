@@ -1,6 +1,6 @@
 # Release Checklist
 
-**项目**: `@chilfish/gallery-dl-instagram`（CLI 二进制 `dl-ins`） | **最后更新**: 2026-11-19
+**项目**: `@chilfish/gallery-dl-instagram`（CLI 二进制 `dl-ins`） | **最后更新**: 2026-11-22
 
 > 发布到 npm。目标：每个「里程碑发布」的产物在真实环境验证通过，不留已知回归。
 > 本文档覆盖**里程碑发布**（打 tag → CI 发布 npm → 手写 GitHub Release）的完整清单。
@@ -110,6 +110,15 @@
 - 首次配置后必须在 npm 要求的期限内成功发布一次，Trusted Publisher 才会从 `Pending validation` 变为生效
 
 ## 发布记录
+
+### 0.3.0（2026-11-22）
+
+- 新增 SDK 代理支持：`createSDK({ proxy })`、`/node` 的 `createProxyFetch`，Node 使用可选 peer `undici`
+- 发布提交 `chore(release): v0.3.0`，tag `v0.3.0`；`publish.yml` 全步骤通过
+- 离线门禁：typecheck / lint / 207 tests / build 全绿；CI run `45037739932` 通过
+- 真实环境冒烟：临时目录从 registry 安装 0.3.0，`dl-ins --version` 输出 `0.3.0`，`/node` 导出 `createProxyFetch`
+- registry：`latest = 0.3.0`，发布后约 2 分钟处于 `Validating`，随后自动生效
+- GitHub Release v0.3.0 已创建
 
 ### 0.2.7（2026-11-19）
 
