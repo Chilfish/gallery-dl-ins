@@ -5,7 +5,7 @@
  * CLI and SDK both use this as the default HTTP layer — no external deps.
  */
 
-import type { HttpClient, HttpResponse } from './types'
+import type { HttpClient, HttpResponse, RequestConfig } from './types'
 
 // ── Types ──
 
@@ -23,6 +23,11 @@ export interface FetchClientOptions {
   timeout?: number
   /** Called with response headers after every request. Used for cookie-jar updates. */
   onResponse?: (headers: Record<string, string>) => void
+  /**
+   * Extra fetch init computed per request (may be async). The Node adapter
+   * uses this to attach an undici dispatcher for proxying.
+   */
+  init?: (config: RequestConfig) => RequestInit | Promise<RequestInit | undefined> | undefined
 }
 
 // ── Helpers ──
@@ -185,7 +190,14 @@ export function createFetchHttpClient(opts: FetchClientOptions = {}): HttpClient
       }
 
       try {
-        const resp = await fetch(url, { method, headers, body, signal })
+        const init = await opts.init?.(config)
+        const resp = await fetch(url, {
+          method,
+          headers,
+          body,
+          signal,
+          ...init,
+        })
 
         // Notify cookie jar
         onResponse?.(headersToRecord(resp.headers))

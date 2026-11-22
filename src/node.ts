@@ -1,2 +1,2 @@
-export { createSDK } from './node-factory'
+export { createProxyFetch, createSDK } from './node-factory'
 export type { CreateSDKOptions } from './node-factory'

@@ -10,7 +10,7 @@ export default defineConfig([
     platform: 'neutral',
     target: 'es2022',
     deps: {
-      neverBundle: [/^node:/],
+      neverBundle: [/^node:/, 'undici'],
     },
     exports: true,
   },

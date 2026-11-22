@@ -26,6 +26,7 @@ export type { ExtractorOptions, Logger } from './core/extractor'
 export { noopLogger } from './core/extractor'
 export { Job } from './core/job'
 export { PrintJob } from './core/print-job'
+export type { FetchClientOptions } from './fetcher'
 
 // Sub-extractors (for direct instantiation)
 export {
@@ -48,6 +49,14 @@ export * from './instagram/index'
 export { directory, queue, url } from './message'
 
 export type { MessageIter } from './message'
+
+// Proxy (platform-aware core helpers)
+export {
+  assertHttpProxy,
+  createBunProxyHttpClient,
+  createProxyHttpClient,
+  isBunRuntime,
+} from './proxy'
 
 // SDK class (platform-agnostic)
 export { InstagramSDK } from './sdk'
