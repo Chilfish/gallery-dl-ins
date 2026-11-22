@@ -19,7 +19,7 @@ bun run typecheck    # tsc --noEmit
 ```typescript
 // SDK — 平台无关
 platform: 'neutral',
-deps: { neverBundle: [/^node:/] },   // node: 内置模块保持外部引用
+deps: { neverBundle: [/^node:/, 'undici'] },   // node: 内置模块与可选 peer 保持外部引用
 
 // CLI — 自包含
 platform: 'node',
@@ -27,6 +27,7 @@ deps: { onlyBundle: ['commander'] },  // 白名单：只有 commander 打进产�
 ```
 
 - **SDK 的 `neutral` 平台**不解析 `node:` 内置模块，必须显式 `neverBundle`，否则构建报警 `UNRESOLVED_IMPORT`。
+- `undici` 是代理功能的**可选 peer 依赖**（`optional`），`src/node-factory.ts` 中懒加载 `ProxyAgent`；必须 `neverBundle`，不能打进 SDK。
 - **CLI 的 `onlyBundle` 白名单**：新增需要打包进 CLI 的依赖必须登记，否则 `npx` 环境会 `ERR_MODULE_NOT_FOUND`。见 [postmortem 001](../postmortem/001-axios-to-native-fetch.md)。
 - 不要使用 `outExtension`（tsdown v0.23 中不存在该选项，正确的是 `outExtensions`）；当前扩展名由 `format` + `package.json` 的 `type: module` 决定。
 

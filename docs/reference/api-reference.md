@@ -1,6 +1,6 @@
 # API 参考
 
-> `@chilfish/gallery-dl-instagram` v0.2.7 — 公开导出面（`src/index.ts` + `src/node.ts`）。
+> `@chilfish/gallery-dl-instagram` v0.3.0 — 公开导出面（`src/index.ts` + `src/node.ts`）。
 > 用法示例见 [guide/sdk.md](../guide/sdk.md)；内部实现见 [engineering/architecture.md](../engineering/architecture.md)。
 
 ## 入口
@@ -9,7 +9,7 @@
 // 平台无关核心 + Instagram 模块
 import { … } from '@chilfish/gallery-dl-instagram'
 
-// Node.js 便利工厂（cookies → HttpClient + fs Storage）
+// Node.js 便利工厂（cookies → HttpClient + fs Storage，可选代理）
 import { createSDK } from '@chilfish/gallery-dl-instagram/node'
 ```
 
@@ -231,7 +231,7 @@ class InstagramSDK {
 export type { ExtractOptions, SDKOptions }
 ```
 
-### `createSDK`（来自 `./node`）
+### `createSDK` / `createProxyFetch`（来自 `./node`）
 
 ```typescript
 function createSDK(opts?: CreateSDKOptions): Promise<InstagramSDK>
@@ -239,10 +239,39 @@ function createSDK(opts?: CreateSDKOptions): Promise<InstagramSDK>
 interface CreateSDKOptions {
   cookies?: string
   http?: HttpClient
+  proxy?: string | null   // null = 关闭环境变量回退；忽略 opts.http
   storage?: Storage
   log?: Logger
 }
+
+// 独立创建经代理转发的 HttpClient
+function createProxyFetch(
+  proxy: string,
+  opts?: Omit<FetchClientOptions, 'init'>,
+): HttpClient
 ```
+
+`proxy` 缺省读取 `http_proxy` / `HTTPS_PROXY` / `https_proxy`。Node 依赖可选 peer `undici`（懒加载 `ProxyAgent`），Bun 用原生 fetch `proxy` 选项。仅支持 `http://` / `https://`。
+
+---
+
+## Proxy（Core，平台无关）
+
+```typescript
+import {
+  assertHttpProxy,
+  createBunProxyHttpClient,
+  createProxyHttpClient,
+  isBunRuntime,
+} from '@chilfish/gallery-dl-instagram'
+
+function isBunRuntime(): boolean
+function assertHttpProxy(proxy: string): void            // 非法 scheme 抛错
+function createBunProxyHttpClient(proxy: string): HttpClient
+function createProxyHttpClient(proxy: string): HttpClient // 仅 Bun；Node 请用 createProxyFetch
+```
+
+`createFetchHttpClient` 的平台无关选项 `FetchClientOptions` 新增 `init?: (config: RequestConfig) => RequestInit | Promise<RequestInit | undefined> | undefined`，用于按请求注入 transport 选项（如 undici `dispatcher`）。
 
 ---
 

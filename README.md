@@ -39,6 +39,15 @@ const stats = await ig.download('https://www.instagram.com/p/ABC123/', './downlo
 // → { posts: 1, files: 9, bytes: 4500000 }
 ```
 
+需要代理时传 `proxy`（也可用 `http_proxy` / `HTTPS_PROXY` 环境变量；Node 需可选依赖 `undici`）：
+
+```ts
+const ig = await createSDK({
+  cookies: 'ds_user_id=...; sessionid=...; csrftoken=...',
+  proxy: 'http://127.0.0.1:7890',
+})
+```
+
 ### 自定义 Adapter（非 Node.js 环境）
 
 ```ts

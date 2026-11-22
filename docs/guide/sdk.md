@@ -43,7 +43,7 @@ for await (const msg of ig.extract('https://www.instagram.com/p/ABC123/')) {
 
 | 入口 | 适用场景 | 需要提供 |
 |---|---|---|
-| `createSDK()`（`/node`） | Node.js，一行搞定 | `cookies` 或自定义 `http` |
+| `createSDK()`（`/node`） | Node.js，一行搞定 | `cookies` 或自定义 `http`；可选 `proxy` |
 | `new InstagramSDK()`（`.`） | 任意平台，自定义 HTTP / Storage / Logger | 无（`http` 缺省用内置 fetch 客户端） |
 | 手动组装 extractor + job | 完全控制执行流程 | 全套依赖 |
 
@@ -77,10 +77,40 @@ const ig = new InstagramSDK({
 `createSDK` 的行为：
 
 - 传 `cookies` → 自动 `extractCsrf()` 并注入 Cookie 头；未传 `storage` 时首次下载才动态加载 `fs` 实现。
-- 传 `http` → 直接用你的实现，不再创建默认客户端。
+- 传 `http` → 直接用你的实现，不再创建默认客户端（`proxy` 被忽略）。
 - 两者都不传 → `http` 仍是内置 fetch 客户端，但没有 Cookie，只能访问公开内容。
+- 传 `proxy`（或设置环境变量）→ 所有请求经该 HTTP(S) 代理转发。
 
 **Cookie 从哪里来**：浏览器打开 instagram.com（已登录）→ F12 → Network → 任一请求 → Request Headers → 复制整行 `Cookie:`。
+
+### 代理
+
+Node.js 下通过 `proxy` 让所有请求走 HTTP(S) 代理：
+
+```ts
+import { createSDK } from '@chilfish/gallery-dl-instagram/node'
+
+const ig = await createSDK({
+  cookies: 'ds_user_id=...; sessionid=...',
+  proxy: 'http://127.0.0.1:7890',
+})
+```
+
+- 未传 `proxy` 时读取环境变量 `http_proxy` / `HTTPS_PROXY` / `https_proxy`；传 `null` 可显式关闭环境变量回退。
+- 需要可选 peer 依赖 `undici`（Node 用其 `ProxyAgent`）：`npm i undici` / `bun add undici`。缺失时首次请求会抛出安装提示。
+- 只支持 `http://` / `https://` 代理，SOCKS 不支持（fetch 传输层限制）。
+- Bun 使用原生 `fetch` 的 `proxy` 选项，无需 `undici`。
+
+已有自定义 HTTP 层时，可单独创建代理客户端：
+
+```ts
+import { createProxyFetch } from '@chilfish/gallery-dl-instagram/node'
+import { InstagramSDK } from '@chilfish/gallery-dl-instagram'
+
+const ig = new InstagramSDK({
+  http: createProxyFetch('http://127.0.0.1:7890', { cookie: 'sessionid=...' }),
+})
+```
 
 ### `ig.extract(url)` — 提取消息流
 
