@@ -16,6 +16,7 @@
 | [006](006-stories-user-resolution.md) | stories `User not found` 与 REST `reels_media` 失效 | 错误语义 / 端点退化 | 错误必须保留状态码；HTML 抓取显式 `responseType: 'text'` 并准备多来源退路 |
 | [007](007-highlight-page-payload.md) | highlight 直链只走 REST，页面 payload 形状与 `__typename` 分流失配 | 类型假设 / 端点退化 | 页面 payload 按路由区分形状；分流看 `items` 而不是 `__typename` |
 | [008](008-rest-feed-deprecation.md) | 用户 feed REST 端点全面退役，缺少 doc_id GraphQL 退路 | 端点退化 / 依赖假设 | 用户 feed 走 doc_id GraphQL，REST 与页面 payload 只作降级；200 HTML 也要识别 |
+| [009](009-rest-media-downscaled-candidates.md) | 单帖图片被 REST 端点降级到 1080px | 端点退化 / 数据形状假设 | 不同端点的候选阶梯不同；`original_width` 与候选上限不一致即降级信号 |
 
 ## 高频雷区（写码前自查）
 
@@ -56,6 +57,7 @@
 
 - **类型对齐真实响应，不对齐直觉**：`music_info` 是 `MusicSticker` 容器，不是 `MusicAssetInfo`。见 [005](005-music-metadata-nesting-mismatch.md)。
 - **静默丢弃是可观测性缺陷**：解析器拿不到字段时至少 `log.warn`，不要 `return null` 了事。
+- **同一实体不同端点的候选阶梯可能不同**：REST `media/info` 只给 1080px 降级候选，帖子页才给原图（可达 3072px）。`original_width` 与候选上限不一致就是降级信号；图片尺寸这类静默降级不会报错，新增数据源时先抓包核对。见 [009](009-rest-media-downscaled-candidates.md)。
 
 ## 如何新增一条
 

@@ -35,6 +35,7 @@ dl-ins saved               → InstagramSavedExtractor（需登录）
 | `--max-posts <n>` | `max-posts` | 同上 |
 | `--order-files <order>` | `order-files` | 同上 |
 | `--static-videos` / `--no-static-videos` | `static-videos` | 同上（`ParserConfig.staticVideo`） |
+| `--no-original` | `original` | `InstagramExtractor.items()`（默认开启，缺省即升级） |
 | `--cursor <cursor>` | `cursor` | `_initCursor()` |
 | `--include <list>` | `include` | `InstagramUserExtractor.items()` |
 | `--split` | `split` | `InstagramStoriesExtractor.posts()` |

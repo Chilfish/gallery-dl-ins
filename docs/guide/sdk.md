@@ -330,6 +330,7 @@ const config = new ConfigManager({
       'max-posts': 50,        // 最大帖子数
       'order-files': 'r',     // r / d 开头 = 反转文件顺序
       'static-videos': false, // true = 只下载封面
+      original: true,         // 从帖子页补取原始尺寸（默认 true）
       cursor: '上次的cursor',
       include: 'all',         // user 提取器分发哪些子类型
       split: false,           // stories 每帧独立输出

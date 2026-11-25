@@ -103,6 +103,7 @@ dl-ins saved --cookies="..."
 | `--audio` | `false` | 下载独立音频轨（story 音乐贴纸 / Reels BGM） |
 | `--static-videos` | `false` | 下载静态视频封面而非真实视频 |
 | `--no-static-videos` | — | 关闭静态封面（默认行为，显式写出） |
+| `--no-original` | — | 不向帖子页补取原图，保留 REST 返回的 1080px 版本 |
 | `--max-posts <n>` | 无限制 | 最多处理的帖子数 |
 | `--cursor <cursor>` | — | 从上次的游标继续 |
 | `--order-files <order>` | 自然序 | `r` / `d` 开头表示反转文件顺序 |
@@ -196,5 +197,5 @@ dl-ins https://www.instagram.com/user/ --cursor=<value>
 | `Auth required` | 端点需要登录 | 加 `--cookies` 或 `--sessionid` |
 | 下载 0 个文件 | 子提取器拿到空配置 | 见 [postmortem 004](../postmortem/004-queue-dispatch-missing-deps.md) |
 | 图片被截断/体积异常 | 二进制被当文本解码 | 见 [postmortem 003](../postmortem/003-binary-download-csrf.md) |
-| 图片分辨率低于预期 | 未登录限制 | 加登录 Cookie（上限短边 1080px，CDN 签名不可改参） |
+| 图片分辨率低于预期 | 帖子页补取失败，回退到 REST 的 1080px | 看 `-v` 是否打印 `Post page upgrade skipped`；原图上限由作者上传尺寸决定（可达 3072px），CDN 签名参数不可改 |
 | `ERR_MODULE_NOT_FOUND`（npx） | CLI 产物不自包含 | 见 [postmortem 001](../postmortem/001-axios-to-native-fetch.md) |

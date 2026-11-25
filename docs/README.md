@@ -61,6 +61,7 @@ TypeScript 移植版 Instagram 媒体提取器：平台无关核心（只依赖 
 | [006](postmortem/006-stories-user-resolution.md) | stories `User not found` 与 REST `reels_media` 失效 |
 | [007](postmortem/007-highlight-page-payload.md) | highlight 直链只走 REST，页面 payload 形状与 `__typename` 分流失配 |
 | [008](postmortem/008-rest-feed-deprecation.md) | 用户 feed REST 端点退役，改用 doc_id GraphQL + 降级链 |
+| [009](postmortem/009-rest-media-downscaled-candidates.md) | 单帖图片被 REST 端点降级到 1080px，改由帖子页补取原图 |
 
 ## archive/ — 存档
 

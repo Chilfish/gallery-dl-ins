@@ -317,7 +317,7 @@ _updateCursor(cursor: string | null): string | null
 _assignUser(user: InstagramUser): void
 ```
 
-`items()` 的管线：读配置 → 构建 `ParserConfig` → 遍历 `posts()` → **按响应形状**选择解析器（`items` 或 `image_versions2 + user` 存在走 REST；doc_id GraphQL 节点也是 REST 形状）→ 产出 `directory` 消息 → 逐文件产出 `url` 消息（音频 / 视频 / 图片，`order-files` 可反转顺序）。
+`items()` 的管线：读配置 → 构建 `ParserConfig` → 遍历 `posts()` → 对尺寸被降级的帖子向帖子页补取原图（`original` 配置，`--no-original` 关闭）→ **按响应形状**选择解析器（`items` 或 `image_versions2 + user` 存在走 REST；doc_id GraphQL 节点也是 REST 形状）→ 产出 `directory` 消息 → 逐文件产出 `url` 消息（音频 / 视频 / 图片，`order-files` 可反转顺序）。
 
 ### 子提取器
 
@@ -325,7 +325,7 @@ _assignUser(user: InstagramUser): void
 
 | 提取器 | `subcategory` | URL 模式 | 数据来源 |
 |---|---|---|---|
-| `InstagramPostExtractor` | `post` / `reel` | `/p/{code}`、`/tv/{code}`、`/reel(s)/{code}`、`/share/...` | `api.media()` |
+| `InstagramPostExtractor` | `post` / `reel` | `/p/{code}`、`/tv/{code}`、`/reel(s)/{code}`、`/share/...` | `api.media()` → `api.pagePost()` 回退 |
 | `InstagramUserExtractor` | `user` | `/{username}` | 按 `include` 发 `Queue`，自身不取数 |
 | `InstagramPostsExtractor` | `posts` | `/{username}/posts` | `api.userFeed()`：doc_id GraphQL → REST → 页面 payload |
 | `InstagramReelsExtractor` | `reels` | `/{username}/reels` | `api.userClips()`：doc_id GraphQL → REST form POST |
@@ -358,6 +358,7 @@ class InstagramRestAPI {
 
   // 帖子 / 媒体
   media(shortcode: string): AsyncGenerator<InstagramPost>
+  pagePost(shortcode: string): Promise<InstagramPost | null>   // 帖子页内嵌的完整尺寸数据
 
   // 用户内容（username 用于 posts 的 doc_id 查询）
   userFeed(userId: string, username?: string): AsyncGenerator<InstagramPost>
