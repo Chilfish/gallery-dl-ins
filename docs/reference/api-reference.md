@@ -1,6 +1,6 @@
 # API 参考
 
-> `@chilfish/gallery-dl-instagram` v0.3.0 — 公开导出面（`src/index.ts` + `src/node.ts`）。
+> `@chilfish/gallery-dl-instagram` v0.3.1 — 公开导出面（`src/index.ts` + `src/node.ts`）。
 > 用法示例见 [guide/sdk.md](../guide/sdk.md)；内部实现见 [engineering/architecture.md](../engineering/architecture.md)。
 
 ## 入口

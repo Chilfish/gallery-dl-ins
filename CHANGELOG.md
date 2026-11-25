@@ -2,6 +2,27 @@
 
 本文件记录 `@chilfish/gallery-dl-instagram` 的用户可见变化。格式参考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## 0.3.1 (2026-11-25)
+
+单帖图片不再被截到 1080px，下载到的是作者上传的原始尺寸。
+
+### 修复
+
+- 单帖、Reels、/tv 链接下载到的图片改用帖子页里的完整尺寸，作者上传 1440px 或更高的原图不再降级到 1080px。
+- 多图帖的每一张图都按同样的方式取回原始尺寸。
+- REST 帖子接口不可用时（未登录、被限流或重定向到登录页），改用帖子页内的数据继续提取。
+- 图片候选按原始宽高比选择，不再可能选中同一张图的方形裁剪版本。
+
+### 变更
+
+- 新增 `--no-original`，关闭帖子页补取，保留 REST 返回的尺寸。
+
+### 安装
+
+```bash
+npm install @chilfish/gallery-dl-instagram@0.3.1
+```
+
 ## 0.3.0 (2026-11-22)
 
 SDK 调用方可以为 HTTP 请求设置代理地址。
