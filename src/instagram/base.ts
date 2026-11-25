@@ -19,6 +19,7 @@ import { Extractor } from '../core/extractor'
 import { url } from '../message'
 import { findTags, nameExtFromURL } from '../utils/text'
 import { InstagramRestAPI, normalizeUserStrategies } from './api'
+import { needsUpgrade, upgradeMedia } from './media-upgrade'
 import { parsePostGraphql, parsePostRest } from './parsers'
 
 export class Ref<T> {
@@ -181,11 +182,30 @@ export abstract class InstagramExtractor extends Extractor {
       `cfg: videos=${shouldDownloadVideos} previews=${!!previews} audio=${audio} maxPosts=${maxPosts ?? '∞'} staticVideos=${parserCfg.staticVideo}`,
     )
 
+    // REST ``media/info`` serves a downscaled candidate ladder; the post page
+    // carries the full-size one. Fetch it only when the payload was trimmed.
+    const restoreOriginal = this._cfg('original', true) !== false
+
     let count = 0
     for await (const post of this.posts()) {
       if (maxPosts != null && count >= maxPosts)
         break
       count++
+
+      if (restoreOriginal && post.code && needsUpgrade(post)) {
+        try {
+          const page = await this.api.pagePost(post.code)
+          if (upgradeMedia(post, page))
+            this.log.debug(`Restored original-size media for ${post.code}`)
+        }
+        catch (err) {
+          this.log.debug(
+            `Post page upgrade skipped for ${post.code}: ${err instanceof Error
+              ? err.message
+              : String(err)}`,
+          )
+        }
+      }
 
       // Route by shape, not by ``__typename``: doc_id GraphQL media nodes carry
       // ``__typename`` but keep the REST shape (``user`` + ``image_versions2``).

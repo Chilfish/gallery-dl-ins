@@ -16,6 +16,7 @@ import type {
   VideoVersion,
 } from '../types'
 import { shortcodeFromId } from '../../utils/id-codec'
+import { bestCandidate } from '../media-upgrade'
 
 /** Main entry — parse a REST post response. */
 
@@ -233,13 +234,19 @@ function parseMediaItem(
   cfg: ParserConfig,
   num: number,
 ): ParsedMedia | null {
-  let image: ImageCandidate
+  let image: ImageCandidate | undefined
   try {
-    image = item.image_versions2.candidates[0]!
+    image = bestCandidate(
+      item.image_versions2.candidates,
+      item.original_width,
+      item.original_height,
+    )
   }
   catch {
     return null
   }
+  if (!image)
+    return null
 
   const itemRec = item as unknown as Record<string, unknown>
 

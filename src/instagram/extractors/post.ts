@@ -51,7 +51,33 @@ export class InstagramPostExtractor extends InstagramExtractor {
     }
 
     this.log.debug(`Fetching post: ${shortcode}`)
-    yield* this.api.media(shortcode)
+
+    try {
+      const posts: InstagramPost[] = []
+      for await (const post of this.api.media(shortcode))
+        posts.push(post)
+      if (posts.length > 0) {
+        yield* posts
+        return
+      }
+      this.log.debug(`REST returned no media for ${shortcode} — falling back to the post page`)
+    }
+    catch (err) {
+      this.log.debug(
+        `REST media failed for ${shortcode} (${err instanceof Error
+          ? err.message
+          : String(err)}) — falling back to the post page`,
+      )
+    }
+
+    const page = await this.api.pagePost(shortcode)
+    if (!page) {
+      throw new Error(
+        `Could not read post ${shortcode} from REST or its page `
+        + '— it may be private, deleted, or age-restricted',
+      )
+    }
+    yield page
   }
 }
 

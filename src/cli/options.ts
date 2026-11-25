@@ -15,6 +15,7 @@ export interface GlobalOptions {
   orderPosts?: string
   orderFiles?: string
   staticVideos?: boolean
+  original?: boolean
   api?: string
   verbose?: boolean
   include?: string
@@ -36,6 +37,7 @@ export function addSharedOptions(cmd: Command): Command {
     .option('--order-files <order>', 'File ordering: r, d (reverse), or empty for natural order')
     .option('--static-videos', 'Download static video cover images instead of actual videos', false)
     .option('--no-static-videos', 'Do not force static video covers')
+    .option('--no-original', 'Keep the REST image size instead of fetching the full-size one from the post page')
     .option('--api <backend>', 'API backend: auto (default), rest, or graphql', 'auto')
     .option('-v, --verbose', 'Verbose debug output', false)
     .option('--include <list>', 'For user: comma-separated sub-extractors (posts,reels,tagged,stories,highlights,info,avatar)', 'posts')
@@ -63,6 +65,8 @@ export function buildConfig(opts: GlobalOptions): ConfigManager {
     ig['order-files'] = opts.orderFiles
   if (opts.staticVideos)
     ig['static-videos'] = true
+  if (opts.original === false)
+    ig.original = false
   if (opts.api)
     ig.api = opts.api
   if (opts.include)

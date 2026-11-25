@@ -15,6 +15,8 @@ import type { InstagramPost } from './types'
 const REELS_KEY = 'xdt_api__v1__feed__reels_media'
 const REELS_CONNECTION_KEY = 'xdt_api__v1__feed__reels_media__connection'
 const TIMELINE_KEY = 'xdt_api__v1__feed__user_timeline_graphql_connection'
+const POST_KEY = 'xdt_api__v1__media__shortcode__web_info'
+const POST_KEY_ANON = 'xig_polaris_media'
 
 /** Narrow an unknown value to a plain object (arrays excluded). */
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -187,6 +189,121 @@ export function extractUserTimelineFromPage(
 
     if (Array.isArray(container.profile_grid_items))
       return container.profile_grid_items as InstagramPost[]
+  }
+
+  return null
+}
+
+/**
+ * Find the single-post container embedded in a post page.
+ *
+ * Two shapes are in use: the logged-in shell carries
+ * ``xdt_api__v1__media__shortcode__web_info.items[0]``; the logged-out shell
+ * carries ``xig_polaris_media`` whose media node sits under
+ * ``if_not_gated_logged_out`` (falling back to the wrapper itself).
+ */
+function findPostContainer(
+  node: unknown,
+  depth = 0,
+): Record<string, unknown> | null {
+  if (depth > 60 || node == null || typeof node !== 'object')
+    return null
+
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = findPostContainer(item, depth + 1)
+      if (found)
+        return found
+    }
+    return null
+  }
+
+  const rec = node as Record<string, unknown>
+
+  const direct = asRecord(rec[POST_KEY])
+  if (Array.isArray(direct?.items)) {
+    const item = asRecord(direct.items[0])
+    if (item)
+      return item
+  }
+
+  const anon = rec[POST_KEY_ANON]
+  if (anon != null) {
+    const wrapper = asRecord(anon)
+    const media = asRecord(wrapper?.if_not_gated_logged_out) ?? wrapper
+    if (media && asRecord(media.image_versions2))
+      return media
+  }
+
+  for (const value of Object.values(rec)) {
+    const found = findPostContainer(value, depth + 1)
+    if (found)
+      return found
+  }
+  return null
+}
+
+/**
+ * Fill in dimensions for candidates that only carry a ``url``.
+ *
+ * The logged-out payload omits ``width``/``height`` on every candidate; the
+ * first one is the un-downscaled original, so seed it from
+ * ``original_width``/``original_height``. Remaining candidates stay sizeless
+ * and are ignored by size comparisons.
+ */
+function seedCandidateDimensions(
+  media: Record<string, unknown>,
+): void {
+  const versions = asRecord(media.image_versions2)
+  const candidates = Array.isArray(versions?.candidates)
+    ? versions.candidates
+    : []
+  const first = asRecord(candidates[0])
+  if (!first || typeof first.width === 'number')
+    return
+
+  const width = media.original_width
+  const height = media.original_height
+  if (typeof width === 'number' && typeof height === 'number') {
+    first.width = width
+    first.height = height
+  }
+}
+
+/**
+ * Parse a single-post page for its embedded media node.
+ *
+ * Returns ``null`` when the page carries no payload (error shell, or a
+ * logged-in response that was served without SSR data).
+ */
+export function extractMediaFromPage(
+  html: string,
+): Record<string, unknown> | null {
+  if (!html.includes('data-sjs'))
+    return null
+
+  for (const block of html.matchAll(/<script[^>]*data-sjs[^>]*>([\s\S]*?)<\/script>/g)) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(block[1] ?? '')
+    }
+    catch {
+      continue
+    }
+
+    const media = findPostContainer(parsed)
+    if (!media)
+      continue
+
+    seedCandidateDimensions(media)
+    if (Array.isArray(media.carousel_media)) {
+      for (const child of media.carousel_media) {
+        const rec = asRecord(child)
+        if (rec)
+          seedCandidateDimensions(rec)
+      }
+    }
+    return media
   }
 
   return null

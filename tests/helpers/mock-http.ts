@@ -12,6 +12,9 @@ interface MockRoute {
 export class MockHttpClient implements HttpClient {
   private routes: MockRoute[] = []
 
+  /** URLs requested so far, in order. */
+  readonly calls: string[] = []
+
   /** Add a mock route */
   add(match: string, data: unknown, status = 200): this {
     this.routes.push({ match, data, status })
@@ -28,6 +31,7 @@ export class MockHttpClient implements HttpClient {
     timeout?: number
     responseType?: 'arraybuffer' | 'text' | 'json'
   }): Promise<HttpResponse<T>> {
+    this.calls.push(config.url)
     const url = config.url.toLowerCase()
     for (const route of this.routes) {
       if (url.includes(route.match.toLowerCase())) {

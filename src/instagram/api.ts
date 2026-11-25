@@ -16,7 +16,7 @@ import type {
   InstagramUser,
 } from './types'
 import { idFromShortcode } from '../utils/id-codec'
-import { extractUserTimelineFromPage } from './html-payload'
+import { extractMediaFromPage, extractUserTimelineFromPage } from './html-payload'
 
 const APP_ID = '936619743392459'
 const ASBD_ID = '129477'
@@ -217,6 +217,31 @@ export class InstagramRestAPI {
     const numericId = idFromShortcode(sc)
     const endpoint = `/v1/media/${numericId}/info/`
     yield* this._pagination(endpoint)
+  }
+
+  /**
+   * Media node embedded in a post page.
+   *
+   * The REST ``media/info`` endpoint returns a downscaled candidate list
+   * (1080px and below) even though ``original_width`` describes the full
+   * image. The post page ships the complete ladder — this reads it so callers
+   * can upgrade the REST payload, and doubles as a fallback when REST refuses
+   * (logged-out requests get a 404 ``not-logged-in``).
+   */
+  async pagePost(shortcode: string): Promise<InstagramPost | null> {
+    const resp = await this._request({
+      url: `${this.root}/p/${encodeURIComponent(shortcode)}/`,
+      responseType: 'text',
+      headers: DOCUMENT_HEADERS,
+    })
+    if (resp.status < 200 || resp.status >= 300)
+      throw new Error(`post page returned status ${resp.status}`)
+
+    const html = typeof resp.data === 'string'
+      ? resp.data
+      : ''
+    const media = extractMediaFromPage(html)
+    return media as unknown as InstagramPost | null
   }
 
   /**
